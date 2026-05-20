@@ -1,0 +1,70 @@
+<h1 id="TIPSDKDocumentation-TIPSDKDocumentation">TIP SDK Documentation</h1><p>The TIP SDK is a multi-platform toolkit for building AI-powered applications on the TIP platform. It provides a unified interface for LLM providers through LiteLLM with built-in support for agents, tools, MCP, and enterprise features.</p><hr/><h2 id="TIPSDKDocumentation-AvailablePlatforms">Available Platforms</h2><div class="table-wrap"><table data-layout="default" class="confluenceTable"><tbody><tr><th class="confluenceTh"><p>Platform</p></th><th class="confluenceTh"><p>Package</p></th><th class="confluenceTh"><p>Use Case</p></th></tr><tr><td class="confluenceTd"><p><strong>Command Line</strong></p></td><td class="confluenceTd"><p><code>tip-cli</code></p></td><td class="confluenceTd"><p>Interactive AI chat, agent testing, configuration management</p></td></tr><tr><td class="confluenceTd"><p><strong>Python</strong></p></td><td class="confluenceTd"><p><code>tip-sdk</code></p></td><td class="confluenceTd"><p>Web apps, data science, scripting, automation</p></td></tr><tr><td class="confluenceTd"><p><strong>Node.js</strong></p></td><td class="confluenceTd"><p><code>@tip/sdk</code></p></td><td class="confluenceTd"><p>Full-stack JavaScript, serverless functions, TypeScript apps</p></td></tr><tr><td class="confluenceTd"><p><strong>Java</strong></p></td><td class="confluenceTd"><p><code>com.tip:tip-sdk-java</code></p></td><td class="confluenceTd"><p>Enterprise applications, Spring Boot, Android, JVM languages</p></td></tr><tr><td class="confluenceTd"><p><strong>Rust</strong></p></td><td class="confluenceTd"><p><code>tip-sdk</code></p></td><td class="confluenceTd"><p>High-performance services, systems programming, CLI tools</p></td></tr></tbody></table></div><hr/><h2 id="TIPSDKDocumentation-GettingStarted">Getting Started</h2><p>Choose your platform:</p><ul><li><p><strong>CLI</strong> — <code>tip config init</code> to get started with the command-line tool</p></li><li><p><strong>Python</strong> — <code>pip install tip-sdk</code> or <code>uv add tip-sdk</code></p></li><li><p><strong>Node.js</strong> — <code>npm install @tip/sdk</code></p></li><li><p><strong>Java</strong> — Add <code>com.tip:tip-sdk-java</code> to your Gradle/Maven build</p></li><li><p><strong>Rust</strong> — Add <code>tip-sdk</code> to your <code>Cargo.toml</code></p></li></ul><p>See <strong>Installation &amp; Configuration</strong> for detailed setup instructions including corporate CA certificates.</p><hr/><h2 id="TIPSDKDocumentation-CoreFeatures">Core Features</h2><p>All SDK platforms share these capabilities:</p><div class="table-wrap"><table data-layout="default" class="confluenceTable"><tbody><tr><th class="confluenceTh"><p>Feature</p></th><th class="confluenceTh"><p>Description</p></th></tr><tr><td class="confluenceTd"><p><strong>LiteLLM Integration</strong></p></td><td class="confluenceTd"><p>Unified interface for multiple LLM providers (OpenAI, Bedrock, Azure, Anthropic)</p></td></tr><tr><td class="confluenceTd"><p><strong>Agent Framework</strong></p></td><td class="confluenceTd"><p>Build intelligent agents with tool calling and orchestration</p></td></tr><tr><td class="confluenceTd"><p><strong>MCP Support</strong></p></td><td class="confluenceTd"><p>Model Context Protocol integration for extensible tool ecosystems</p></td></tr><tr><td class="confluenceTd"><p><strong>RAG Primitives</strong></p></td><td class="confluenceTd"><p>Chunking, embeddings, and knowledge management</p></td></tr><tr><td class="confluenceTd"><p><strong>Guardrails</strong></p></td><td class="confluenceTd"><p>Input/output validation, PII detection, injection prevention</p></td></tr><tr><td class="confluenceTd"><p><strong>Observability</strong></p></td><td class="confluenceTd"><p>Built-in tracing, metrics, and logging</p></td></tr><tr><td class="confluenceTd"><p><strong>Human-in-the-Loop</strong></p></td><td class="confluenceTd"><p>Approval workflows for sensitive operations</p></td></tr><tr><td class="confluenceTd"><p><strong>Streaming</strong></p></td><td class="confluenceTd"><p>Real-time token streaming for all platforms</p></td></tr></tbody></table></div><hr/><h2 id="TIPSDKDocumentation-QuickExamples">Quick Examples</h2><h3 id="TIPSDKDocumentation-CLI">CLI</h3><div class="code panel pdl conf-macro output-block" data-hasbody="true" data-macro-id="ad9167ab-5122-4c7e-97bd-143a12d16b8b" data-macro-name="code" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: bash; gutter: false; theme: Confluence" data-theme="Confluence"># Interactive chat
+tip chat
+
+# One-shot completion
+tip chat -m &quot;What is the capital of France?&quot;
+
+# Use a specific model
+tip chat --model anthropic.claude-sonnet-4-20250514-v1:0
+
+# Test an agent
+tip agents run my-agent --input &quot;Search for recent news&quot;</pre>
+</div></div><h3 id="TIPSDKDocumentation-Python">Python</h3><div class="code panel pdl conf-macro output-block" data-hasbody="true" data-macro-id="e454ab75-6651-4b2e-810e-3f7eeeffbae5" data-macro-name="code" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: py; gutter: false; theme: Confluence" data-theme="Confluence">from tip_sdk import TipClient
+
+client = TipClient()
+response = client.chat.completions.create(
+    model=&quot;anthropic.claude-sonnet-4-20250514-v1:0&quot;,
+    messages=[{&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;Hello!&quot;}]
+)
+print(response.choices[0].message.content)</pre>
+</div></div><h3 id="TIPSDKDocumentation-Node.js">Node.js</h3><div class="code panel pdl conf-macro output-block" data-hasbody="true" data-macro-id="49fabd26-c14e-4015-925c-ad3b3c635f62" data-macro-name="code" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: js; gutter: false; theme: Confluence" data-theme="Confluence">import { TipClient } from '@tip/sdk';
+
+const client = new TipClient();
+const response = await client.chat.completions.create({
+    model: 'anthropic.claude-sonnet-4-20250514-v1:0',
+    messages: [{ role: 'user', content: 'Hello!' }]
+});
+console.log(response.choices[0].message.content);</pre>
+</div></div><h3 id="TIPSDKDocumentation-Java">Java</h3><div class="code panel pdl conf-macro output-block" data-hasbody="true" data-macro-id="4d38f1c1-6343-44e0-aadd-92dcda3e6191" data-macro-name="code" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">import com.tip.sdk.*;
+import java.util.List;
+
+// Create client (reads TIP_API_KEY from environment)
+try (TipClient client = new TipClient()) {
+    ChatCompletion response = client.complete(List.of(
+        Message.user(&quot;Hello!&quot;)
+    ));
+    System.out.println(response.getContent());
+}
+
+// Or use the builder for custom configuration
+TipClient client = TipClient.builder()
+    .apiKey(&quot;your-api-key&quot;)
+    .defaultModel(&quot;anthropic.claude-sonnet-4-20250514-v1:0&quot;)
+    .build();
+
+// Async with CompletableFuture
+CompletableFuture&lt;ChatCompletion&gt; future = client.completeAsync(
+    List.of(Message.user(&quot;Hello!&quot;))
+);
+future.thenAccept(r -&gt; System.out.println(r.getContent()));</pre>
+</div></div><h3 id="TIPSDKDocumentation-Rust">Rust</h3><div class="code panel pdl conf-macro output-block" data-hasbody="true" data-macro-id="d530d52f-a954-44e8-b50a-a6e9ca69502d" data-macro-name="code" style="border-width: 1px;"><div class="codeContent panelContent pdl">
+<pre class="syntaxhighlighter-pre" data-syntaxhighlighter-params="brush: java; gutter: false; theme: Confluence" data-theme="Confluence">use tip_sdk::TipClient;
+
+#[tokio::main]
+async fn main() {
+    let client = TipClient::new();
+    let response = client.chat().completions()
+        .create(CreateChatCompletionRequest {
+            model: &quot;anthropic.claude-sonnet-4-20250514-v1:0&quot;.into(),
+            messages: vec![Message::user(&quot;Hello!&quot;)],
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+    println!(&quot;{}&quot;, response.choices[0].message.content);
+}</pre>
+</div></div><hr/><h2 id="TIPSDKDocumentation-DocumentationSections">Documentation Sections</h2><h3 id="TIPSDKDocumentation-Overview">Overview</h3><ul><li><p>Purpose</p></li><li><p>Why an SDK</p></li></ul><h3 id="TIPSDKDocumentation-Installation&amp;Configuration">Installation &amp; Configuration</h3><ul><li><p>Install (CLI, Python, Node.js, Java, Rust)</p></li><li><p>Configuration</p></li><li><p>Corporate Environment Considerations (Certificates)</p></li></ul><h3 id="TIPSDKDocumentation-QuickStart">Quick Start</h3><ul><li><p>Hello TIP</p></li><li><p>Your First Agent</p></li><li><p>Basic Application</p></li></ul><h3 id="TIPSDKDocumentation-Reference">Reference</h3><ul><li><p>Architecture</p></li><li><p>Security Documentation</p></li><li><p>CI/CD Integration</p></li><li><p>Concepts &amp; Best Practices</p></li></ul><h3 id="TIPSDKDocumentation-APIReference">API Reference</h3><ul><li><p><strong>Python</strong>: Package documentation for <code>tip_sdk.*</code> modules</p></li><li><p><strong>Node.js</strong>: TypeScript type definitions and module docs</p></li><li><p><strong>Java</strong>: Javadoc and package documentation</p></li><li><p><strong>Rust</strong>: Crate documentation via <code>cargo doc</code></p></li><li><p><strong>CLI</strong>: <code>tip --help</code> and subcommand help</p></li></ul><hr/><h2 id="TIPSDKDocumentation-EnvironmentVariables">Environment Variables</h2><p>All platforms use consistent environment variables:</p><div class="table-wrap"><table data-layout="default" class="confluenceTable"><tbody><tr><th class="confluenceTh"><p>Variable</p></th><th class="confluenceTh"><p>Description</p></th><th class="confluenceTh"><p>Default</p></th></tr><tr><td class="confluenceTd"><p><code>TIP_API_KEY</code></p></td><td class="confluenceTd"><p>API key for authentication</p></td><td class="confluenceTd"><p>(required)</p></td></tr><tr><td class="confluenceTd"><p><code>TIP_BASE_URL</code></p></td><td class="confluenceTd"><p>LiteLLM endpoint URL</p></td><td class="confluenceTd"><p>TIP production endpoint</p></td></tr><tr><td class="confluenceTd"><p><code>TIP_DEFAULT_MODEL</code></p></td><td class="confluenceTd"><p>Default model for completions</p></td><td class="confluenceTd"><p><code>anthropic.claude-haiku-4-5-20251001-v1:0</code></p></td></tr><tr><td class="confluenceTd"><p><code>TIP_TIMEOUT</code></p></td><td class="confluenceTd"><p>Request timeout in seconds</p></td><td class="confluenceTd"><p><code>60</code></p></td></tr><tr><td class="confluenceTd"><p><code>TIP_KNOWLEDGE_URL</code></p></td><td class="confluenceTd"><p>Knowledge service endpoint</p></td><td class="confluenceTd"><p>(optional)</p></td></tr><tr><td class="confluenceTd"><p><code>TIP_TEMPORAL_URL</code></p></td><td class="confluenceTd"><p>Temporal endpoint for workflows</p></td><td class="confluenceTd"><p>(optional)</p></td></tr></tbody></table></div><hr/><h2 id="TIPSDKDocumentation-SourceCode">Source Code</h2><p>The SDK is developed as a unified monorepo:</p><p><strong>Repository</strong>: <a class="external-link" href="https://git.marriott.com/emerging-tech/tip-sdk" rel="nofollow">git.marriott.com/emerging-tech/tip-sdk</a></p><div class="table-wrap"><table data-layout="default" class="confluenceTable"><tbody><tr><th class="confluenceTh"><p>Crate</p></th><th class="confluenceTh"><p>Path</p></th><th class="confluenceTh"><p>Description</p></th></tr><tr><td class="confluenceTd"><p><code>tip-sdk</code></p></td><td class="confluenceTd"><p><code>crates/tip-sdk</code></p></td><td class="confluenceTd"><p>Core Rust SDK</p></td></tr><tr><td class="confluenceTd"><p><code>tip-cli</code></p></td><td class="confluenceTd"><p><code>crates/tip-cli</code></p></td><td class="confluenceTd"><p>Command-line interface</p></td></tr><tr><td class="confluenceTd"><p><code>tip-sdk-py</code></p></td><td class="confluenceTd"><p><code>crates/tip-sdk-py</code></p></td><td class="confluenceTd"><p>Python bindings (PyO3)</p></td></tr><tr><td class="confluenceTd"><p><code>tip-sdk-js</code></p></td><td class="confluenceTd"><p><code>crates/tip-sdk-js</code></p></td><td class="confluenceTd"><p>Node.js bindings (NAPI-RS)</p></td></tr><tr><td class="confluenceTd"><p><code>tip-sdk-java</code></p></td><td class="confluenceTd"><p><code>crates/tip-sdk-java</code></p></td><td class="confluenceTd"><p>Java bindings (JNI)</p></td></tr></tbody></table></div><hr/><h2 id="TIPSDKDocumentation-ContributionsandBugReports">Contributions and Bug Reports</h2><p>See <strong>Contributions and Bug Reports</strong> for guidelines on reporting issues and contributing to the SDK.</p>

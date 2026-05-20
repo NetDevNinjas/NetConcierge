@@ -219,15 +219,15 @@ volumes:
 
 ### Phase 2 Tests
 
-- [ ] `docker compose config` exits 0 with no warnings
-- [ ] `docker compose up -d` starts all 5 containers without error
-- [ ] `docker compose ps` shows all containers as `healthy` (allow up to 60s for healthchecks)
-- [ ] `docker network ls` shows `netconcierge_front-net`, `netconcierge_path-a-net`, `netconcierge_path-b-net`
-- [ ] `docker network inspect netconcierge_path-a-net` confirms `webserver` and `router` are members with the expected IPs
-- [ ] `docker exec client ping -c 3 172.20.0.254` succeeds (client → router)
-- [ ] `docker exec router ping -c 3 172.21.0.10` succeeds (router → webserver via path-a)
-- [ ] `docker exec router ping -c 3 172.22.0.10` succeeds (router → webserver via path-b)
-- [ ] `.env` file exists at repo root and contains both required variables
+- [x] `docker compose config` exits 0 with no warnings
+- [x] `docker compose up -d` starts all 5 containers without error
+- [x] `docker compose ps` shows all containers as `healthy` (allow up to 60s for healthchecks)
+- [x] `docker network ls` shows `netconcierge_front-net`, `netconcierge_path-a-net`, `netconcierge_path-b-net`
+- [x] `docker network inspect netconcierge_path-a-net` confirms `webserver` and `router` are members with the expected IPs
+- [x] `docker exec client ping -c 3 172.20.0.254` succeeds (client → router)
+- [x] `docker exec router ping -c 3 172.21.0.10` succeeds (router → webserver via path-a)
+- [x] `docker exec router ping -c 3 172.22.0.10` succeeds (router → webserver via path-b)
+- [x] `.env` file exists at repo root and contains both required variables
 
 ---
 

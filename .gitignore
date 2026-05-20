@@ -1,2 +1,8 @@
 .env
 logs/
+.ansible-lint
+.yamllint
+.djlintrc
+.gitleaks.toml
+.pre-commit-config.yaml
+.gitleaks.toml-extra

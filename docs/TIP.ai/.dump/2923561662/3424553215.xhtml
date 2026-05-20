@@ -1,0 +1,514 @@
+<h1 local-id="bfae92b8473e" id="Architecture-Architecture">Architecture</h1><p local-id="e1fb4729721d">Comprehensive technical architecture of the TIP SDK, covering module structure, data flows, agent execution, MCP integration, deployment scenarios, and security.</p><hr local-id="d3644591555a"/><h2 local-id="ee7b1d731f76" id="Architecture-1.SDKModuleArchitecture">1. SDK Module Architecture</h2><div class="ap-container conf-macro output-block" data-hasbody="false" data-layout="default" data-local-id="8a3dae10-ca4f-4098-880b-afc31d5ed84a" data-macro-id="4b6467ae-e1d9-4922-8ab4-a4cd99b17781" data-macro-name="drawio" id="ap-com.mxgraph.confluence.plugins.diagramly__drawio8258690939305623649">
+
+  
+  <div class="ap-content " id="embedded-com.mxgraph.confluence.plugins.diagramly__drawio8258690939305623649"> </div>
+  <script nonce="e9cd89f208004dc0b3bfa2b8bf0c477f" class="ap-iframe-body-script">//<![CDATA[
+
+  (function(){
+    var data = {
+    "addon_key":"com.mxgraph.confluence.plugins.diagramly",
+    "uniqueKey":"com.mxgraph.confluence.plugins.diagramly__drawio8258690939305623649",
+    "key":"drawio",
+     "moduleType":"dynamicContentMacros",      "moduleLocation":"content",         "cp":"/wiki",
+            "general":"",
+    "w":"",
+    "h":"",
+    "url":"https://ac.draw.io/connect/confluence/viewer-1-4-42.html?ceoId=3424553215&diagramName=Untitled+Diagram-1774734117218.drawio&revision=1&width=1181&height=609&tbstyle=&simple=0&lbox=1&zoom=1&links=&owningPageId=3424553215&displayName=Untitled+Diagram-1774734117218.drawio&contentId=&custContentId=3423374036&contentVer=1&inComment=0&aspect=&pCenter=0&hiRes=&templateUrl=&tmpBuiltIn=&mVer=2&pageInfo=&tempPreview=&xdm_e=https%3A%2F%2Fmarriottcloud.atlassian.net&xdm_c=channel-com.mxgraph.confluence.plugins.diagramly__drawio8258690939305623649&cp=%2Fwiki&xdm_deprecated_addon_key_do_not_use=com.mxgraph.confluence.plugins.diagramly&lic=active&capSet=capabilityStandard&userAccess=true&cv=1000.0.0-f9a5858cb377&traceId=e9cd89f208004dc0b3bfa2b8bf0c477f&spanId=ddd7c5162fa0ddf5&traceSampled=1&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI3MTIwMjA6NTRhY2IzMjItNzNlOS00N2RlLTgyOGYtMDYwN2I4YzZmZmJhIiwicXNoIjoiZWY5ZjViMjEyYWUxZTNlNTIyMTdhMTM2MWU3YmQzZjM2MDE4NjFhYjdiNWMxMWUzYzkxMWI5MjY3ZDk3YWNmYSIsImlzcyI6IjBlMjkzY2NhLWY4YzQtMzVjOC1hNjMzLWY0YzE4N2E4ZGE4OCIsImNvbnRleHQiOnt9LCJleHAiOjE3NzkzMTM5OTEsImlhdCI6MTc3OTMxMzgxMX0.UpQyncp2BlsrOZFIH3xKBGXUWisRDZ9_8kwJnRb_R98",
+     "contextJwt": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI3MTIwMjA6NTRhY2IzMjItNzNlOS00N2RlLTgyOGYtMDYwN2I4YzZmZmJhIiwicXNoIjoiY29udGV4dC1xc2giLCJpc3MiOiIwZTI5M2NjYS1mOGM0LTM1YzgtYTYzMy1mNGMxODdhOGRhODgiLCJjb250ZXh0Ijp7ImxpY2Vuc2UiOnsiYWN0aXZlIjp0cnVlLCJjYXBhYmlsaXR5U2V0IjoiY2FwYWJpbGl0eVN0YW5kYXJkIn0sInVybCI6eyJkaXNwbGF5VXJsIjoiaHR0cHM6XC9cL21hcnJpb3R0Y2xvdWQuYXRsYXNzaWFuLm5ldFwvd2lraSJ9LCJjb25mbHVlbmNlIjp7ImVkaXRvciI6eyJ2ZXJzaW9uIjoidjIifSwibWFjcm8iOnsib3V0cHV0VHlwZSI6ImRpc3BsYXkiLCJoYXNoIjoiNGI2NDY3YWUtZTFkOS00OTIyLThhYjQtYTRjZDk5YjE3NzgxIiwiaWQiOiI0YjY0NjdhZS1lMWQ5LTQ5MjItOGFiNC1hNGNkOTliMTc3ODEifSwidHJhY2luZyI6eyJ0cmFjZUlkIjoiZTljZDg5ZjIwODAwNGRjMGIzYmZhMmI4YmYwYzQ3N2YiLCJzcGFuSWQiOiJkZGQ3YzUxNjJmYTBkZGY1Iiwic2FtcGxlZCI6IjEifSwiY29udGVudCI6eyJ0eXBlIjoicGFnZSIsInZlcnNpb24iOiIyIiwiaWQiOiIzNDI0NTUzMjE1In0sInNwYWNlIjp7ImtleSI6IkdBSSIsImlkIjoiMjk1MDc2Mzg3In19fSwiZXhwIjoxNzc5MzE0NzExLCJpYXQiOjE3NzkzMTM4MTF9.4C33M997-rfIXpOxddlVZX9ZBgXQOE9A-0QIHhe29Sc",    "structuredContext": "{\"license\":{\"active\":true,\"capabilitySet\":\"capabilityStandard\"},\"confluence\":{\"editor\":{\"version\":\"v2\"},\"macro\":{\"outputType\":\"display\",\"hash\":\"4b6467ae-e1d9-4922-8ab4-a4cd99b17781\",\"id\":\"4b6467ae-e1d9-4922-8ab4-a4cd99b17781\"},\"tracing\":{\"traceId\":\"e9cd89f208004dc0b3bfa2b8bf0c477f\",\"spanId\":\"ddd7c5162fa0ddf5\",\"sampled\":\"1\"},\"content\":{\"type\":\"page\",\"version\":\"2\",\"id\":\"3424553215\"},\"space\":{\"key\":\"GAI\",\"id\":\"295076387\"}},\"url\":{\"displayUrl\":\"https://marriottcloud.atlassian.net/wiki\"}}",
+    "contentClassifier":"content",
+    "productCtx":"{\"page.id\":\"3424553215\",\"macro.hash\":\"4b6467ae-e1d9-4922-8ab4-a4cd99b17781\",\"mVer\":\"2\",\"tracing.sampled\":\"1\",\"page.type\":\"page\",\"macro.localId\":\"8a3dae10-ca4f-4098-880b-afc31d5ed84a\",\"simple\":\"0\",\"inComment\":\"0\",\": = | RAW | = :\":\"mVer=2|simple=0|zoom=1|inComment=0|pageId=3424553215|custContentId=3423374036|diagramDisplayName=Untitled Diagram-1774734117218.drawio|lbox=1|contentVer=1|revision=1|baseUrl=https://marriottcloud.atlassian.net/wiki|diagramName=Untitled Diagram-1774734117218.drawio|pCenter=0|width=1181|links=|tbstyle=|height=609\",\"space.id\":\"295076387\",\"diagramDisplayName\":\"Untitled Diagram-1774734117218.drawio\",\"diagramName\":\"Untitled Diagram-1774734117218.drawio\",\"tracing.traceId\":\"e9cd89f208004dc0b3bfa2b8bf0c477f\",\"links\":\"\",\"tbstyle\":\"\",\"tracing.spanId\":\"ddd7c5162fa0ddf5\",\"user.isExternalCollaborator\":\"false\",\"height\":\"609\",\"space.key\":\"GAI\",\"content.version\":\"2\",\"page.title\":\"Architecture\",\"zoom\":\"1\",\"macro.body\":\"\",\"pageId\":\"3424553215\",\"custContentId\":\"3423374036\",\"macro.truncated\":\"false\",\"lbox\":\"1\",\"content.type\":\"page\",\"output.type\":\"display\",\"contentVer\":\"1\",\"page.version\":\"2\",\"revision\":\"1\",\"baseUrl\":\"https://marriottcloud.atlassian.net/wiki\",\"macro.fragmentLocalId\":\"\",\"pCenter\":\"0\",\"content.id\":\"3424553215\",\"width\":\"1181\",\"macro.id\":\"4b6467ae-e1d9-4922-8ab4-a4cd99b17781\",\"editor.version\":\"v2\"}",
+    "timeZone":"UTC",
+    "origin":"https://ac.draw.io",
+    "hostOrigin":"https://marriottcloud.atlassian.net",
+    "sandbox":"allow-downloads allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-scripts allow-same-origin allow-top-navigation-by-user-activation allow-storage-access-by-user-activation",    "pearApp":"true",        "apiMigrations": {
+        "gdpr": true
+    }
+}
+;
+    if(window.AP && window.AP.subCreate) {
+      window._AP.appendConnectAddon(data);
+    } else {
+      require(['ac/create'], function(create){
+        create.appendConnectAddon(data);
+      });
+    }
+
+    // For Confluence App Analytics. This code works in conjunction with CFE's ConnectSupport.js.
+    // Here, we add a listener to the initial HTML page that stores events if the ConnectSupport component
+    // has not mounted yet. In CFE, we process the missed event data and disable this initial listener.
+    const __MAX_EVENT_ARRAY_SIZE__ = 20;
+    const connectAppAnalytics = "ecosystem.confluence.connect.analytics";
+    window.connectHost && window.connectHost.onIframeEstablished((eventData) => {
+      if (!window.__CONFLUENCE_CONNECT_SUPPORT_LOADED__) {
+        let events = JSON.parse(window.localStorage.getItem(connectAppAnalytics)) || [];
+        if (events.length >= __MAX_EVENT_ARRAY_SIZE__) {
+          events.shift();
+        }
+        events.push(eventData);
+        window.localStorage.setItem(connectAppAnalytics, JSON.stringify(events));
+      }
+    });
+
+  }());
+
+//]]>
+</script>
+
+</div>
+<h3 local-id="68c4d0b4cb2b" id="Architecture-LayerDescriptions">Layer Descriptions</h3><ul local-id="cb9345e348c1"><li local-id="li-app"><p local-id="p-app"><strong>Application Layer: </strong>Simple API, Client API, Agent Framework</p></li><li local-id="li-core"><p local-id="p-core"><strong>Core Layer: </strong>types/resources, chat completions, models, images, tools, Pydantic, conversation, config, retries, exceptions</p></li><li local-id="li-ext"><p local-id="p-ext"><strong>Extension Layer: </strong>Guardrails, MCP, Skills, Knowledge/RAG, Evals</p></li><li local-id="li-infra"><p local-id="p-infra"><strong>Infrastructure Layer: </strong>hooks/events, scheduling/triggers, HITL, pipeline server, Temporal worker, CLI</p></li><li local-id="li-backend"><p local-id="p-backend"><strong>Backend Layer: </strong>LiteLLM calling via <a class="external-link" href="http://TIP.ai" rel="nofollow">TIP.ai</a> gateway to cloud providers</p></li></ul><hr local-id="c9a598482b05"/><h2 local-id="bfa07ffaa9f8" id="Architecture-2.DataFlowArchitecture">2. Data Flow Architecture</h2><p local-id="2523a4395f53">A chat completion request flows through these stages:</p><div class="ap-container conf-macro output-block" data-hasbody="false" data-layout="default" data-local-id="cef73777-f924-4dbc-9d59-f140cd2a05f2" data-macro-id="31b31441-7fd2-4069-aca8-9146ead3bb76" data-macro-name="drawio" id="ap-com.mxgraph.confluence.plugins.diagramly__drawio1301327905924136881">
+
+  
+  <div class="ap-content " id="embedded-com.mxgraph.confluence.plugins.diagramly__drawio1301327905924136881"> </div>
+  <script nonce="e9cd89f208004dc0b3bfa2b8bf0c477f" class="ap-iframe-body-script">//<![CDATA[
+
+  (function(){
+    var data = {
+    "addon_key":"com.mxgraph.confluence.plugins.diagramly",
+    "uniqueKey":"com.mxgraph.confluence.plugins.diagramly__drawio1301327905924136881",
+    "key":"drawio",
+     "moduleType":"dynamicContentMacros",      "moduleLocation":"content",         "cp":"/wiki",
+            "general":"",
+    "w":"",
+    "h":"",
+    "url":"https://ac.draw.io/connect/confluence/viewer-1-4-42.html?ceoId=3424553215&diagramName=Untitled+Diagram-1774734369356.drawio&revision=1&width=1082&height=511&tbstyle=&simple=0&lbox=1&zoom=1&links=&owningPageId=3424553215&displayName=Untitled+Diagram-1774734369356.drawio&contentId=&custContentId=3422686001&contentVer=1&inComment=0&aspect=&pCenter=0&hiRes=&templateUrl=&tmpBuiltIn=&mVer=2&pageInfo=&tempPreview=&xdm_e=https%3A%2F%2Fmarriottcloud.atlassian.net&xdm_c=channel-com.mxgraph.confluence.plugins.diagramly__drawio1301327905924136881&cp=%2Fwiki&xdm_deprecated_addon_key_do_not_use=com.mxgraph.confluence.plugins.diagramly&lic=active&capSet=capabilityStandard&userAccess=true&cv=1000.0.0-f9a5858cb377&traceId=e9cd89f208004dc0b3bfa2b8bf0c477f&spanId=5f9c8d716e0cd5c4&traceSampled=1&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI3MTIwMjA6NTRhY2IzMjItNzNlOS00N2RlLTgyOGYtMDYwN2I4YzZmZmJhIiwicXNoIjoiMGE2ZTVhZjIyYjQwZTk5NDljNzlmNGJhYjkyMzZlYzZkYmNkYThhOTgzNjliYTRkMDNhODNiMGE5ZjVlZDcyMSIsImlzcyI6IjBlMjkzY2NhLWY4YzQtMzVjOC1hNjMzLWY0YzE4N2E4ZGE4OCIsImNvbnRleHQiOnt9LCJleHAiOjE3NzkzMTM5OTEsImlhdCI6MTc3OTMxMzgxMX0.sx3AwOiMA1NxF4-E8iE-w3wLdXdSFI_bEO0zQwHQ55M",
+     "contextJwt": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI3MTIwMjA6NTRhY2IzMjItNzNlOS00N2RlLTgyOGYtMDYwN2I4YzZmZmJhIiwicXNoIjoiY29udGV4dC1xc2giLCJpc3MiOiIwZTI5M2NjYS1mOGM0LTM1YzgtYTYzMy1mNGMxODdhOGRhODgiLCJjb250ZXh0Ijp7ImxpY2Vuc2UiOnsiYWN0aXZlIjp0cnVlLCJjYXBhYmlsaXR5U2V0IjoiY2FwYWJpbGl0eVN0YW5kYXJkIn0sInVybCI6eyJkaXNwbGF5VXJsIjoiaHR0cHM6XC9cL21hcnJpb3R0Y2xvdWQuYXRsYXNzaWFuLm5ldFwvd2lraSJ9LCJjb25mbHVlbmNlIjp7ImVkaXRvciI6eyJ2ZXJzaW9uIjoidjIifSwibWFjcm8iOnsib3V0cHV0VHlwZSI6ImRpc3BsYXkiLCJoYXNoIjoiMzFiMzE0NDEtN2ZkMi00MDY5LWFjYTgtOTE0NmVhZDNiYjc2IiwiaWQiOiIzMWIzMTQ0MS03ZmQyLTQwNjktYWNhOC05MTQ2ZWFkM2JiNzYifSwidHJhY2luZyI6eyJ0cmFjZUlkIjoiZTljZDg5ZjIwODAwNGRjMGIzYmZhMmI4YmYwYzQ3N2YiLCJzcGFuSWQiOiI1ZjljOGQ3MTZlMGNkNWM0Iiwic2FtcGxlZCI6IjEifSwiY29udGVudCI6eyJ0eXBlIjoicGFnZSIsInZlcnNpb24iOiIyIiwiaWQiOiIzNDI0NTUzMjE1In0sInNwYWNlIjp7ImtleSI6IkdBSSIsImlkIjoiMjk1MDc2Mzg3In19fSwiZXhwIjoxNzc5MzE0NzExLCJpYXQiOjE3NzkzMTM4MTF9.df_vBlxF6NApUCVuJdKE-R5bM7L2gRwVBpKKqSzfZFI",    "structuredContext": "{\"license\":{\"active\":true,\"capabilitySet\":\"capabilityStandard\"},\"confluence\":{\"editor\":{\"version\":\"v2\"},\"macro\":{\"outputType\":\"display\",\"hash\":\"31b31441-7fd2-4069-aca8-9146ead3bb76\",\"id\":\"31b31441-7fd2-4069-aca8-9146ead3bb76\"},\"tracing\":{\"traceId\":\"e9cd89f208004dc0b3bfa2b8bf0c477f\",\"spanId\":\"5f9c8d716e0cd5c4\",\"sampled\":\"1\"},\"content\":{\"type\":\"page\",\"version\":\"2\",\"id\":\"3424553215\"},\"space\":{\"key\":\"GAI\",\"id\":\"295076387\"}},\"url\":{\"displayUrl\":\"https://marriottcloud.atlassian.net/wiki\"}}",
+    "contentClassifier":"content",
+    "productCtx":"{\"page.id\":\"3424553215\",\"macro.hash\":\"31b31441-7fd2-4069-aca8-9146ead3bb76\",\"mVer\":\"2\",\"tracing.sampled\":\"1\",\"page.type\":\"page\",\"macro.localId\":\"cef73777-f924-4dbc-9d59-f140cd2a05f2\",\"simple\":\"0\",\"inComment\":\"0\",\": = | RAW | = :\":\"mVer=2|simple=0|zoom=1|inComment=0|pageId=3424553215|custContentId=3422686001|diagramDisplayName=Untitled Diagram-1774734369356.drawio|lbox=1|contentVer=1|revision=1|baseUrl=https://marriottcloud.atlassian.net/wiki|diagramName=Untitled Diagram-1774734369356.drawio|pCenter=0|width=1082|links=|tbstyle=|height=511\",\"space.id\":\"295076387\",\"diagramDisplayName\":\"Untitled Diagram-1774734369356.drawio\",\"diagramName\":\"Untitled Diagram-1774734369356.drawio\",\"tracing.traceId\":\"e9cd89f208004dc0b3bfa2b8bf0c477f\",\"links\":\"\",\"tbstyle\":\"\",\"tracing.spanId\":\"5f9c8d716e0cd5c4\",\"user.isExternalCollaborator\":\"false\",\"height\":\"511\",\"space.key\":\"GAI\",\"content.version\":\"2\",\"page.title\":\"Architecture\",\"zoom\":\"1\",\"macro.body\":\"\",\"pageId\":\"3424553215\",\"custContentId\":\"3422686001\",\"macro.truncated\":\"false\",\"lbox\":\"1\",\"content.type\":\"page\",\"output.type\":\"display\",\"contentVer\":\"1\",\"page.version\":\"2\",\"revision\":\"1\",\"baseUrl\":\"https://marriottcloud.atlassian.net/wiki\",\"macro.fragmentLocalId\":\"\",\"pCenter\":\"0\",\"content.id\":\"3424553215\",\"width\":\"1082\",\"macro.id\":\"31b31441-7fd2-4069-aca8-9146ead3bb76\",\"editor.version\":\"v2\"}",
+    "timeZone":"UTC",
+    "origin":"https://ac.draw.io",
+    "hostOrigin":"https://marriottcloud.atlassian.net",
+    "sandbox":"allow-downloads allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-scripts allow-same-origin allow-top-navigation-by-user-activation allow-storage-access-by-user-activation",    "pearApp":"true",        "apiMigrations": {
+        "gdpr": true
+    }
+}
+;
+    if(window.AP && window.AP.subCreate) {
+      window._AP.appendConnectAddon(data);
+    } else {
+      require(['ac/create'], function(create){
+        create.appendConnectAddon(data);
+      });
+    }
+
+    // For Confluence App Analytics. This code works in conjunction with CFE's ConnectSupport.js.
+    // Here, we add a listener to the initial HTML page that stores events if the ConnectSupport component
+    // has not mounted yet. In CFE, we process the missed event data and disable this initial listener.
+    const __MAX_EVENT_ARRAY_SIZE__ = 20;
+    const connectAppAnalytics = "ecosystem.confluence.connect.analytics";
+    window.connectHost && window.connectHost.onIframeEstablished((eventData) => {
+      if (!window.__CONFLUENCE_CONNECT_SUPPORT_LOADED__) {
+        let events = JSON.parse(window.localStorage.getItem(connectAppAnalytics)) || [];
+        if (events.length >= __MAX_EVENT_ARRAY_SIZE__) {
+          events.shift();
+        }
+        events.push(eventData);
+        window.localStorage.setItem(connectAppAnalytics, JSON.stringify(events));
+      }
+    });
+
+  }());
+
+//]]>
+</script>
+
+</div>
+<hr local-id="f4ba6b9a609c"/><h2 local-id="796fa02296c5" id="Architecture-3.AgentExecutionFlow">3. Agent Execution Flow</h2><div class="ap-container conf-macro output-block" data-hasbody="false" data-layout="default" data-local-id="855da031-a6e7-41aa-b522-b89442468088" data-macro-id="3440b4f3-f4a7-45d9-85c2-4cc32698d25b" data-macro-name="drawio" id="ap-com.mxgraph.confluence.plugins.diagramly__drawio2569852741205727755">
+
+  
+  <div class="ap-content " id="embedded-com.mxgraph.confluence.plugins.diagramly__drawio2569852741205727755"> </div>
+  <script nonce="e9cd89f208004dc0b3bfa2b8bf0c477f" class="ap-iframe-body-script">//<![CDATA[
+
+  (function(){
+    var data = {
+    "addon_key":"com.mxgraph.confluence.plugins.diagramly",
+    "uniqueKey":"com.mxgraph.confluence.plugins.diagramly__drawio2569852741205727755",
+    "key":"drawio",
+     "moduleType":"dynamicContentMacros",      "moduleLocation":"content",         "cp":"/wiki",
+            "general":"",
+    "w":"",
+    "h":"",
+    "url":"https://ac.draw.io/connect/confluence/viewer-1-4-42.html?ceoId=3424553215&diagramName=Untitled+Diagram-1774734581102.drawio&revision=1&width=973&height=713.5&tbstyle=&simple=0&lbox=1&zoom=1&links=&owningPageId=3424553215&displayName=Untitled+Diagram-1774734581102.drawio&contentId=&custContentId=3423046512&contentVer=1&inComment=0&aspect=&pCenter=0&hiRes=&templateUrl=&tmpBuiltIn=&mVer=2&pageInfo=&tempPreview=&xdm_e=https%3A%2F%2Fmarriottcloud.atlassian.net&xdm_c=channel-com.mxgraph.confluence.plugins.diagramly__drawio2569852741205727755&cp=%2Fwiki&xdm_deprecated_addon_key_do_not_use=com.mxgraph.confluence.plugins.diagramly&lic=active&capSet=capabilityStandard&userAccess=true&cv=1000.0.0-f9a5858cb377&traceId=e9cd89f208004dc0b3bfa2b8bf0c477f&spanId=ad49091af5fb76e2&traceSampled=1&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI3MTIwMjA6NTRhY2IzMjItNzNlOS00N2RlLTgyOGYtMDYwN2I4YzZmZmJhIiwicXNoIjoiN2IwNGMwMzg3NjE5YjY4NTc5MjkzZTRmZDU4MDk0ZDU5OGIwZTVjMjEzYmFjYjEyYWZlYTNiYjQzODc1YjY2MyIsImlzcyI6IjBlMjkzY2NhLWY4YzQtMzVjOC1hNjMzLWY0YzE4N2E4ZGE4OCIsImNvbnRleHQiOnt9LCJleHAiOjE3NzkzMTM5OTEsImlhdCI6MTc3OTMxMzgxMX0.pp8YEE5c9htylNn6NlhM5N7gfSFiPlSXjnqrZZlW8wU",
+     "contextJwt": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI3MTIwMjA6NTRhY2IzMjItNzNlOS00N2RlLTgyOGYtMDYwN2I4YzZmZmJhIiwicXNoIjoiY29udGV4dC1xc2giLCJpc3MiOiIwZTI5M2NjYS1mOGM0LTM1YzgtYTYzMy1mNGMxODdhOGRhODgiLCJjb250ZXh0Ijp7ImxpY2Vuc2UiOnsiYWN0aXZlIjp0cnVlLCJjYXBhYmlsaXR5U2V0IjoiY2FwYWJpbGl0eVN0YW5kYXJkIn0sInVybCI6eyJkaXNwbGF5VXJsIjoiaHR0cHM6XC9cL21hcnJpb3R0Y2xvdWQuYXRsYXNzaWFuLm5ldFwvd2lraSJ9LCJjb25mbHVlbmNlIjp7ImVkaXRvciI6eyJ2ZXJzaW9uIjoidjIifSwibWFjcm8iOnsib3V0cHV0VHlwZSI6ImRpc3BsYXkiLCJoYXNoIjoiMzQ0MGI0ZjMtZjRhNy00NWQ5LTg1YzItNGNjMzI2OThkMjViIiwiaWQiOiIzNDQwYjRmMy1mNGE3LTQ1ZDktODVjMi00Y2MzMjY5OGQyNWIifSwidHJhY2luZyI6eyJ0cmFjZUlkIjoiZTljZDg5ZjIwODAwNGRjMGIzYmZhMmI4YmYwYzQ3N2YiLCJzcGFuSWQiOiJhZDQ5MDkxYWY1ZmI3NmUyIiwic2FtcGxlZCI6IjEifSwiY29udGVudCI6eyJ0eXBlIjoicGFnZSIsInZlcnNpb24iOiIyIiwiaWQiOiIzNDI0NTUzMjE1In0sInNwYWNlIjp7ImtleSI6IkdBSSIsImlkIjoiMjk1MDc2Mzg3In19fSwiZXhwIjoxNzc5MzE0NzExLCJpYXQiOjE3NzkzMTM4MTF9.USZ_yqyr3aKqdiAIWyiyE4FYmtC2AACKbdeDk1PW07w",    "structuredContext": "{\"license\":{\"active\":true,\"capabilitySet\":\"capabilityStandard\"},\"confluence\":{\"editor\":{\"version\":\"v2\"},\"macro\":{\"outputType\":\"display\",\"hash\":\"3440b4f3-f4a7-45d9-85c2-4cc32698d25b\",\"id\":\"3440b4f3-f4a7-45d9-85c2-4cc32698d25b\"},\"tracing\":{\"traceId\":\"e9cd89f208004dc0b3bfa2b8bf0c477f\",\"spanId\":\"ad49091af5fb76e2\",\"sampled\":\"1\"},\"content\":{\"type\":\"page\",\"version\":\"2\",\"id\":\"3424553215\"},\"space\":{\"key\":\"GAI\",\"id\":\"295076387\"}},\"url\":{\"displayUrl\":\"https://marriottcloud.atlassian.net/wiki\"}}",
+    "contentClassifier":"content",
+    "productCtx":"{\"page.id\":\"3424553215\",\"macro.hash\":\"3440b4f3-f4a7-45d9-85c2-4cc32698d25b\",\"mVer\":\"2\",\"tracing.sampled\":\"1\",\"page.type\":\"page\",\"macro.localId\":\"855da031-a6e7-41aa-b522-b89442468088\",\"simple\":\"0\",\"inComment\":\"0\",\": = | RAW | = :\":\"mVer=2|simple=0|zoom=1|inComment=0|pageId=3424553215|custContentId=3423046512|diagramDisplayName=Untitled Diagram-1774734581102.drawio|lbox=1|contentVer=1|revision=1|baseUrl=https://marriottcloud.atlassian.net/wiki|diagramName=Untitled Diagram-1774734581102.drawio|pCenter=0|width=973|links=|tbstyle=|height=713.5\",\"space.id\":\"295076387\",\"diagramDisplayName\":\"Untitled Diagram-1774734581102.drawio\",\"diagramName\":\"Untitled Diagram-1774734581102.drawio\",\"tracing.traceId\":\"e9cd89f208004dc0b3bfa2b8bf0c477f\",\"links\":\"\",\"tbstyle\":\"\",\"tracing.spanId\":\"ad49091af5fb76e2\",\"user.isExternalCollaborator\":\"false\",\"height\":\"713.5\",\"space.key\":\"GAI\",\"content.version\":\"2\",\"page.title\":\"Architecture\",\"zoom\":\"1\",\"macro.body\":\"\",\"pageId\":\"3424553215\",\"custContentId\":\"3423046512\",\"macro.truncated\":\"false\",\"lbox\":\"1\",\"content.type\":\"page\",\"output.type\":\"display\",\"contentVer\":\"1\",\"page.version\":\"2\",\"revision\":\"1\",\"baseUrl\":\"https://marriottcloud.atlassian.net/wiki\",\"macro.fragmentLocalId\":\"\",\"pCenter\":\"0\",\"content.id\":\"3424553215\",\"width\":\"973\",\"macro.id\":\"3440b4f3-f4a7-45d9-85c2-4cc32698d25b\",\"editor.version\":\"v2\"}",
+    "timeZone":"UTC",
+    "origin":"https://ac.draw.io",
+    "hostOrigin":"https://marriottcloud.atlassian.net",
+    "sandbox":"allow-downloads allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-scripts allow-same-origin allow-top-navigation-by-user-activation allow-storage-access-by-user-activation",    "pearApp":"true",        "apiMigrations": {
+        "gdpr": true
+    }
+}
+;
+    if(window.AP && window.AP.subCreate) {
+      window._AP.appendConnectAddon(data);
+    } else {
+      require(['ac/create'], function(create){
+        create.appendConnectAddon(data);
+      });
+    }
+
+    // For Confluence App Analytics. This code works in conjunction with CFE's ConnectSupport.js.
+    // Here, we add a listener to the initial HTML page that stores events if the ConnectSupport component
+    // has not mounted yet. In CFE, we process the missed event data and disable this initial listener.
+    const __MAX_EVENT_ARRAY_SIZE__ = 20;
+    const connectAppAnalytics = "ecosystem.confluence.connect.analytics";
+    window.connectHost && window.connectHost.onIframeEstablished((eventData) => {
+      if (!window.__CONFLUENCE_CONNECT_SUPPORT_LOADED__) {
+        let events = JSON.parse(window.localStorage.getItem(connectAppAnalytics)) || [];
+        if (events.length >= __MAX_EVENT_ARRAY_SIZE__) {
+          events.shift();
+        }
+        events.push(eventData);
+        window.localStorage.setItem(connectAppAnalytics, JSON.stringify(events));
+      }
+    });
+
+  }());
+
+//]]>
+</script>
+
+</div>
+<h3 local-id="c8d6728cca08" id="Architecture-ToolCallingAgent">ToolCallingAgent</h3><div class="ap-container conf-macro output-block" data-hasbody="false" data-layout="default" data-local-id="22abf48b-723e-4d90-af51-4b4170d699ea" data-macro-id="8d7bcb4f-b68d-4763-b00f-e55c87b55f6a" data-macro-name="drawio" id="ap-com.mxgraph.confluence.plugins.diagramly__drawio3456116945284731119">
+
+  
+  <div class="ap-content " id="embedded-com.mxgraph.confluence.plugins.diagramly__drawio3456116945284731119"> </div>
+  <script nonce="e9cd89f208004dc0b3bfa2b8bf0c477f" class="ap-iframe-body-script">//<![CDATA[
+
+  (function(){
+    var data = {
+    "addon_key":"com.mxgraph.confluence.plugins.diagramly",
+    "uniqueKey":"com.mxgraph.confluence.plugins.diagramly__drawio3456116945284731119",
+    "key":"drawio",
+     "moduleType":"dynamicContentMacros",      "moduleLocation":"content",         "cp":"/wiki",
+            "general":"",
+    "w":"",
+    "h":"",
+    "url":"https://ac.draw.io/connect/confluence/viewer-1-4-42.html?ceoId=3424553215&diagramName=Untitled+Diagram-1774735758659.drawio&revision=1&width=811.75&height=536.5&tbstyle=&simple=0&lbox=1&zoom=1&links=&owningPageId=3424553215&displayName=Untitled+Diagram-1774735758659.drawio&contentId=&custContentId=3423374078&contentVer=1&inComment=0&aspect=&pCenter=0&hiRes=&templateUrl=&tmpBuiltIn=&mVer=2&pageInfo=&tempPreview=&xdm_e=https%3A%2F%2Fmarriottcloud.atlassian.net&xdm_c=channel-com.mxgraph.confluence.plugins.diagramly__drawio3456116945284731119&cp=%2Fwiki&xdm_deprecated_addon_key_do_not_use=com.mxgraph.confluence.plugins.diagramly&lic=active&capSet=capabilityStandard&userAccess=true&cv=1000.0.0-f9a5858cb377&traceId=e9cd89f208004dc0b3bfa2b8bf0c477f&spanId=9693398d0ea1e308&traceSampled=1&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI3MTIwMjA6NTRhY2IzMjItNzNlOS00N2RlLTgyOGYtMDYwN2I4YzZmZmJhIiwicXNoIjoiNjdiYWYxY2E0ZTdiYjk0OTlhYjY2MjFhZDVkZTQyODJmYzE4ZDUxZGFmYzc2MjM0Y2FjOGU4ZjllZTE2ZTllMiIsImlzcyI6IjBlMjkzY2NhLWY4YzQtMzVjOC1hNjMzLWY0YzE4N2E4ZGE4OCIsImNvbnRleHQiOnt9LCJleHAiOjE3NzkzMTM5OTEsImlhdCI6MTc3OTMxMzgxMX0.e5HGkcUbsEqdp8yWdNBci_r3Honii9oBRuJjgQ_tXFc",
+     "contextJwt": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI3MTIwMjA6NTRhY2IzMjItNzNlOS00N2RlLTgyOGYtMDYwN2I4YzZmZmJhIiwicXNoIjoiY29udGV4dC1xc2giLCJpc3MiOiIwZTI5M2NjYS1mOGM0LTM1YzgtYTYzMy1mNGMxODdhOGRhODgiLCJjb250ZXh0Ijp7ImxpY2Vuc2UiOnsiYWN0aXZlIjp0cnVlLCJjYXBhYmlsaXR5U2V0IjoiY2FwYWJpbGl0eVN0YW5kYXJkIn0sInVybCI6eyJkaXNwbGF5VXJsIjoiaHR0cHM6XC9cL21hcnJpb3R0Y2xvdWQuYXRsYXNzaWFuLm5ldFwvd2lraSJ9LCJjb25mbHVlbmNlIjp7ImVkaXRvciI6eyJ2ZXJzaW9uIjoidjIifSwibWFjcm8iOnsib3V0cHV0VHlwZSI6ImRpc3BsYXkiLCJoYXNoIjoiOGQ3YmNiNGYtYjY4ZC00NzYzLWIwMGYtZTU1Yzg3YjU1ZjZhIiwiaWQiOiI4ZDdiY2I0Zi1iNjhkLTQ3NjMtYjAwZi1lNTVjODdiNTVmNmEifSwidHJhY2luZyI6eyJ0cmFjZUlkIjoiZTljZDg5ZjIwODAwNGRjMGIzYmZhMmI4YmYwYzQ3N2YiLCJzcGFuSWQiOiI5NjkzMzk4ZDBlYTFlMzA4Iiwic2FtcGxlZCI6IjEifSwiY29udGVudCI6eyJ0eXBlIjoicGFnZSIsInZlcnNpb24iOiIyIiwiaWQiOiIzNDI0NTUzMjE1In0sInNwYWNlIjp7ImtleSI6IkdBSSIsImlkIjoiMjk1MDc2Mzg3In19fSwiZXhwIjoxNzc5MzE0NzExLCJpYXQiOjE3NzkzMTM4MTF9.hYbPqQXOwHiF3mFarVjkhknfdku5uV5vb8ELpy0LIMg",    "structuredContext": "{\"license\":{\"active\":true,\"capabilitySet\":\"capabilityStandard\"},\"confluence\":{\"editor\":{\"version\":\"v2\"},\"macro\":{\"outputType\":\"display\",\"hash\":\"8d7bcb4f-b68d-4763-b00f-e55c87b55f6a\",\"id\":\"8d7bcb4f-b68d-4763-b00f-e55c87b55f6a\"},\"tracing\":{\"traceId\":\"e9cd89f208004dc0b3bfa2b8bf0c477f\",\"spanId\":\"9693398d0ea1e308\",\"sampled\":\"1\"},\"content\":{\"type\":\"page\",\"version\":\"2\",\"id\":\"3424553215\"},\"space\":{\"key\":\"GAI\",\"id\":\"295076387\"}},\"url\":{\"displayUrl\":\"https://marriottcloud.atlassian.net/wiki\"}}",
+    "contentClassifier":"content",
+    "productCtx":"{\"page.id\":\"3424553215\",\"macro.hash\":\"8d7bcb4f-b68d-4763-b00f-e55c87b55f6a\",\"mVer\":\"2\",\"tracing.sampled\":\"1\",\"page.type\":\"page\",\"macro.localId\":\"22abf48b-723e-4d90-af51-4b4170d699ea\",\"simple\":\"0\",\"inComment\":\"0\",\": = | RAW | = :\":\"mVer=2|simple=0|zoom=1|inComment=0|pageId=3424553215|custContentId=3423374078|diagramDisplayName=Untitled Diagram-1774735758659.drawio|lbox=1|contentVer=1|revision=1|baseUrl=https://marriottcloud.atlassian.net/wiki|diagramName=Untitled Diagram-1774735758659.drawio|pCenter=0|width=811.75|links=|tbstyle=|height=536.5\",\"space.id\":\"295076387\",\"diagramDisplayName\":\"Untitled Diagram-1774735758659.drawio\",\"diagramName\":\"Untitled Diagram-1774735758659.drawio\",\"tracing.traceId\":\"e9cd89f208004dc0b3bfa2b8bf0c477f\",\"links\":\"\",\"tbstyle\":\"\",\"tracing.spanId\":\"9693398d0ea1e308\",\"user.isExternalCollaborator\":\"false\",\"height\":\"536.5\",\"space.key\":\"GAI\",\"content.version\":\"2\",\"page.title\":\"Architecture\",\"zoom\":\"1\",\"macro.body\":\"\",\"pageId\":\"3424553215\",\"custContentId\":\"3423374078\",\"macro.truncated\":\"false\",\"lbox\":\"1\",\"content.type\":\"page\",\"output.type\":\"display\",\"contentVer\":\"1\",\"page.version\":\"2\",\"revision\":\"1\",\"baseUrl\":\"https://marriottcloud.atlassian.net/wiki\",\"macro.fragmentLocalId\":\"\",\"pCenter\":\"0\",\"content.id\":\"3424553215\",\"width\":\"811.75\",\"macro.id\":\"8d7bcb4f-b68d-4763-b00f-e55c87b55f6a\",\"editor.version\":\"v2\"}",
+    "timeZone":"UTC",
+    "origin":"https://ac.draw.io",
+    "hostOrigin":"https://marriottcloud.atlassian.net",
+    "sandbox":"allow-downloads allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-scripts allow-same-origin allow-top-navigation-by-user-activation allow-storage-access-by-user-activation",    "pearApp":"true",        "apiMigrations": {
+        "gdpr": true
+    }
+}
+;
+    if(window.AP && window.AP.subCreate) {
+      window._AP.appendConnectAddon(data);
+    } else {
+      require(['ac/create'], function(create){
+        create.appendConnectAddon(data);
+      });
+    }
+
+    // For Confluence App Analytics. This code works in conjunction with CFE's ConnectSupport.js.
+    // Here, we add a listener to the initial HTML page that stores events if the ConnectSupport component
+    // has not mounted yet. In CFE, we process the missed event data and disable this initial listener.
+    const __MAX_EVENT_ARRAY_SIZE__ = 20;
+    const connectAppAnalytics = "ecosystem.confluence.connect.analytics";
+    window.connectHost && window.connectHost.onIframeEstablished((eventData) => {
+      if (!window.__CONFLUENCE_CONNECT_SUPPORT_LOADED__) {
+        let events = JSON.parse(window.localStorage.getItem(connectAppAnalytics)) || [];
+        if (events.length >= __MAX_EVENT_ARRAY_SIZE__) {
+          events.shift();
+        }
+        events.push(eventData);
+        window.localStorage.setItem(connectAppAnalytics, JSON.stringify(events));
+      }
+    });
+
+  }());
+
+//]]>
+</script>
+
+</div>
+<h3 local-id="cc125af25bcb" id="Architecture-Guardrails">Guardrails </h3><div class="ap-container conf-macro output-block" data-hasbody="false" data-layout="default" data-local-id="eb9f07e3-5c03-47ad-b62e-b2cc60a15cb8" data-macro-id="19993403-b2df-46ff-b576-bd139442171f" data-macro-name="drawio" id="ap-com.mxgraph.confluence.plugins.diagramly__drawio6627595886254574996">
+
+  
+  <div class="ap-content " id="embedded-com.mxgraph.confluence.plugins.diagramly__drawio6627595886254574996"> </div>
+  <script nonce="e9cd89f208004dc0b3bfa2b8bf0c477f" class="ap-iframe-body-script">//<![CDATA[
+
+  (function(){
+    var data = {
+    "addon_key":"com.mxgraph.confluence.plugins.diagramly",
+    "uniqueKey":"com.mxgraph.confluence.plugins.diagramly__drawio6627595886254574996",
+    "key":"drawio",
+     "moduleType":"dynamicContentMacros",      "moduleLocation":"content",         "cp":"/wiki",
+            "general":"",
+    "w":"",
+    "h":"",
+    "url":"https://ac.draw.io/connect/confluence/viewer-1-4-42.html?ceoId=3424553215&diagramName=Untitled+Diagram-1774736463178.drawio&revision=1&width=1001.75&height=413.5&tbstyle=&simple=0&lbox=1&zoom=1&links=&owningPageId=3424553215&displayName=Untitled+Diagram-1774736463178.drawio&contentId=&custContentId=3423046566&contentVer=1&inComment=0&aspect=&pCenter=0&hiRes=&templateUrl=&tmpBuiltIn=&mVer=2&pageInfo=&tempPreview=&xdm_e=https%3A%2F%2Fmarriottcloud.atlassian.net&xdm_c=channel-com.mxgraph.confluence.plugins.diagramly__drawio6627595886254574996&cp=%2Fwiki&xdm_deprecated_addon_key_do_not_use=com.mxgraph.confluence.plugins.diagramly&lic=active&capSet=capabilityStandard&userAccess=true&cv=1000.0.0-f9a5858cb377&traceId=e9cd89f208004dc0b3bfa2b8bf0c477f&spanId=8c7ccca809b5e3b2&traceSampled=1&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI3MTIwMjA6NTRhY2IzMjItNzNlOS00N2RlLTgyOGYtMDYwN2I4YzZmZmJhIiwicXNoIjoiOTA3NWNiZTM5OGVkODE1YWE3YjJhYzc5NjhiZTIxMTliY2U3OGIwM2E3M2ZkOTIwYjM5MjlkOGM0NzU0N2YwNiIsImlzcyI6IjBlMjkzY2NhLWY4YzQtMzVjOC1hNjMzLWY0YzE4N2E4ZGE4OCIsImNvbnRleHQiOnt9LCJleHAiOjE3NzkzMTM5OTEsImlhdCI6MTc3OTMxMzgxMX0.o_1w8-70WBD3JKm0IC5fmQ3vDhMZnfKEfxBAgc1-3d8",
+     "contextJwt": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI3MTIwMjA6NTRhY2IzMjItNzNlOS00N2RlLTgyOGYtMDYwN2I4YzZmZmJhIiwicXNoIjoiY29udGV4dC1xc2giLCJpc3MiOiIwZTI5M2NjYS1mOGM0LTM1YzgtYTYzMy1mNGMxODdhOGRhODgiLCJjb250ZXh0Ijp7ImxpY2Vuc2UiOnsiYWN0aXZlIjp0cnVlLCJjYXBhYmlsaXR5U2V0IjoiY2FwYWJpbGl0eVN0YW5kYXJkIn0sInVybCI6eyJkaXNwbGF5VXJsIjoiaHR0cHM6XC9cL21hcnJpb3R0Y2xvdWQuYXRsYXNzaWFuLm5ldFwvd2lraSJ9LCJjb25mbHVlbmNlIjp7ImVkaXRvciI6eyJ2ZXJzaW9uIjoidjIifSwibWFjcm8iOnsib3V0cHV0VHlwZSI6ImRpc3BsYXkiLCJoYXNoIjoiMTk5OTM0MDMtYjJkZi00NmZmLWI1NzYtYmQxMzk0NDIxNzFmIiwiaWQiOiIxOTk5MzQwMy1iMmRmLTQ2ZmYtYjU3Ni1iZDEzOTQ0MjE3MWYifSwidHJhY2luZyI6eyJ0cmFjZUlkIjoiZTljZDg5ZjIwODAwNGRjMGIzYmZhMmI4YmYwYzQ3N2YiLCJzcGFuSWQiOiI4YzdjY2NhODA5YjVlM2IyIiwic2FtcGxlZCI6IjEifSwiY29udGVudCI6eyJ0eXBlIjoicGFnZSIsInZlcnNpb24iOiIyIiwiaWQiOiIzNDI0NTUzMjE1In0sInNwYWNlIjp7ImtleSI6IkdBSSIsImlkIjoiMjk1MDc2Mzg3In19fSwiZXhwIjoxNzc5MzE0NzExLCJpYXQiOjE3NzkzMTM4MTF9.qk0CZyDhA__b-eqrwk_pZSiDNJy7gjWwy_zaprP-U7M",    "structuredContext": "{\"license\":{\"active\":true,\"capabilitySet\":\"capabilityStandard\"},\"confluence\":{\"editor\":{\"version\":\"v2\"},\"macro\":{\"outputType\":\"display\",\"hash\":\"19993403-b2df-46ff-b576-bd139442171f\",\"id\":\"19993403-b2df-46ff-b576-bd139442171f\"},\"tracing\":{\"traceId\":\"e9cd89f208004dc0b3bfa2b8bf0c477f\",\"spanId\":\"8c7ccca809b5e3b2\",\"sampled\":\"1\"},\"content\":{\"type\":\"page\",\"version\":\"2\",\"id\":\"3424553215\"},\"space\":{\"key\":\"GAI\",\"id\":\"295076387\"}},\"url\":{\"displayUrl\":\"https://marriottcloud.atlassian.net/wiki\"}}",
+    "contentClassifier":"content",
+    "productCtx":"{\"page.id\":\"3424553215\",\"macro.hash\":\"19993403-b2df-46ff-b576-bd139442171f\",\"mVer\":\"2\",\"tracing.sampled\":\"1\",\"page.type\":\"page\",\"macro.localId\":\"eb9f07e3-5c03-47ad-b62e-b2cc60a15cb8\",\"simple\":\"0\",\"inComment\":\"0\",\": = | RAW | = :\":\"mVer=2|simple=0|zoom=1|inComment=0|pageId=3424553215|custContentId=3423046566|diagramDisplayName=Untitled Diagram-1774736463178.drawio|lbox=1|contentVer=1|revision=1|baseUrl=https://marriottcloud.atlassian.net/wiki|diagramName=Untitled Diagram-1774736463178.drawio|pCenter=0|width=1001.75|links=|tbstyle=|height=413.5\",\"space.id\":\"295076387\",\"diagramDisplayName\":\"Untitled Diagram-1774736463178.drawio\",\"diagramName\":\"Untitled Diagram-1774736463178.drawio\",\"tracing.traceId\":\"e9cd89f208004dc0b3bfa2b8bf0c477f\",\"links\":\"\",\"tbstyle\":\"\",\"tracing.spanId\":\"8c7ccca809b5e3b2\",\"user.isExternalCollaborator\":\"false\",\"height\":\"413.5\",\"space.key\":\"GAI\",\"content.version\":\"2\",\"page.title\":\"Architecture\",\"zoom\":\"1\",\"macro.body\":\"\",\"pageId\":\"3424553215\",\"custContentId\":\"3423046566\",\"macro.truncated\":\"false\",\"lbox\":\"1\",\"content.type\":\"page\",\"output.type\":\"display\",\"contentVer\":\"1\",\"page.version\":\"2\",\"revision\":\"1\",\"baseUrl\":\"https://marriottcloud.atlassian.net/wiki\",\"macro.fragmentLocalId\":\"\",\"pCenter\":\"0\",\"content.id\":\"3424553215\",\"width\":\"1001.75\",\"macro.id\":\"19993403-b2df-46ff-b576-bd139442171f\",\"editor.version\":\"v2\"}",
+    "timeZone":"UTC",
+    "origin":"https://ac.draw.io",
+    "hostOrigin":"https://marriottcloud.atlassian.net",
+    "sandbox":"allow-downloads allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-scripts allow-same-origin allow-top-navigation-by-user-activation allow-storage-access-by-user-activation",    "pearApp":"true",        "apiMigrations": {
+        "gdpr": true
+    }
+}
+;
+    if(window.AP && window.AP.subCreate) {
+      window._AP.appendConnectAddon(data);
+    } else {
+      require(['ac/create'], function(create){
+        create.appendConnectAddon(data);
+      });
+    }
+
+    // For Confluence App Analytics. This code works in conjunction with CFE's ConnectSupport.js.
+    // Here, we add a listener to the initial HTML page that stores events if the ConnectSupport component
+    // has not mounted yet. In CFE, we process the missed event data and disable this initial listener.
+    const __MAX_EVENT_ARRAY_SIZE__ = 20;
+    const connectAppAnalytics = "ecosystem.confluence.connect.analytics";
+    window.connectHost && window.connectHost.onIframeEstablished((eventData) => {
+      if (!window.__CONFLUENCE_CONNECT_SUPPORT_LOADED__) {
+        let events = JSON.parse(window.localStorage.getItem(connectAppAnalytics)) || [];
+        if (events.length >= __MAX_EVENT_ARRAY_SIZE__) {
+          events.shift();
+        }
+        events.push(eventData);
+        window.localStorage.setItem(connectAppAnalytics, JSON.stringify(events));
+      }
+    });
+
+  }());
+
+//]]>
+</script>
+
+</div>
+<hr local-id="66aae8f7cc7b"/><h2 local-id="d55715e6de7d" id="Architecture-4.MCPIntegration">4. MCP Integration</h2><div class="ap-container conf-macro output-block" data-hasbody="false" data-layout="default" data-local-id="0c829f40-1750-4817-9bd4-7717bf398398" data-macro-id="8ee76038-dcb9-4d5b-95f1-e866a5a864af" data-macro-name="drawio" id="ap-com.mxgraph.confluence.plugins.diagramly__drawio7015793224661624834">
+
+  
+  <div class="ap-content " id="embedded-com.mxgraph.confluence.plugins.diagramly__drawio7015793224661624834"> </div>
+  <script nonce="e9cd89f208004dc0b3bfa2b8bf0c477f" class="ap-iframe-body-script">//<![CDATA[
+
+  (function(){
+    var data = {
+    "addon_key":"com.mxgraph.confluence.plugins.diagramly",
+    "uniqueKey":"com.mxgraph.confluence.plugins.diagramly__drawio7015793224661624834",
+    "key":"drawio",
+     "moduleType":"dynamicContentMacros",      "moduleLocation":"content",         "cp":"/wiki",
+            "general":"",
+    "w":"",
+    "h":"",
+    "url":"https://ac.draw.io/connect/confluence/viewer-1-4-42.html?ceoId=3424553215&diagramName=Untitled+Diagram-1774740016684.drawio&revision=1&width=912&height=500.5&tbstyle=&simple=0&lbox=1&zoom=1&links=&owningPageId=3424553215&displayName=Untitled+Diagram-1774740016684.drawio&contentId=&custContentId=3427501115&contentVer=1&inComment=0&aspect=&pCenter=0&hiRes=&templateUrl=&tmpBuiltIn=&mVer=2&pageInfo=&tempPreview=&xdm_e=https%3A%2F%2Fmarriottcloud.atlassian.net&xdm_c=channel-com.mxgraph.confluence.plugins.diagramly__drawio7015793224661624834&cp=%2Fwiki&xdm_deprecated_addon_key_do_not_use=com.mxgraph.confluence.plugins.diagramly&lic=active&capSet=capabilityStandard&userAccess=true&cv=1000.0.0-f9a5858cb377&traceId=e9cd89f208004dc0b3bfa2b8bf0c477f&spanId=77cbeeaefe40c469&traceSampled=1&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI3MTIwMjA6NTRhY2IzMjItNzNlOS00N2RlLTgyOGYtMDYwN2I4YzZmZmJhIiwicXNoIjoiYmRkZTcyZjViOTYxZmYxOTY1MjgyN2RlZDdiMTk5ODkyNzRhYzAzOGEyYmQyOThkZDYwNmM3NTNhODdkNzQ2YyIsImlzcyI6IjBlMjkzY2NhLWY4YzQtMzVjOC1hNjMzLWY0YzE4N2E4ZGE4OCIsImNvbnRleHQiOnt9LCJleHAiOjE3NzkzMTM5OTEsImlhdCI6MTc3OTMxMzgxMX0.AX-Z91Y9Tsy3arp3IW45pWmNPZu24suASKIG5FoYI90",
+     "contextJwt": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI3MTIwMjA6NTRhY2IzMjItNzNlOS00N2RlLTgyOGYtMDYwN2I4YzZmZmJhIiwicXNoIjoiY29udGV4dC1xc2giLCJpc3MiOiIwZTI5M2NjYS1mOGM0LTM1YzgtYTYzMy1mNGMxODdhOGRhODgiLCJjb250ZXh0Ijp7ImxpY2Vuc2UiOnsiYWN0aXZlIjp0cnVlLCJjYXBhYmlsaXR5U2V0IjoiY2FwYWJpbGl0eVN0YW5kYXJkIn0sInVybCI6eyJkaXNwbGF5VXJsIjoiaHR0cHM6XC9cL21hcnJpb3R0Y2xvdWQuYXRsYXNzaWFuLm5ldFwvd2lraSJ9LCJjb25mbHVlbmNlIjp7ImVkaXRvciI6eyJ2ZXJzaW9uIjoidjIifSwibWFjcm8iOnsib3V0cHV0VHlwZSI6ImRpc3BsYXkiLCJoYXNoIjoiOGVlNzYwMzgtZGNiOS00ZDViLTk1ZjEtZTg2NmE1YTg2NGFmIiwiaWQiOiI4ZWU3NjAzOC1kY2I5LTRkNWItOTVmMS1lODY2YTVhODY0YWYifSwidHJhY2luZyI6eyJ0cmFjZUlkIjoiZTljZDg5ZjIwODAwNGRjMGIzYmZhMmI4YmYwYzQ3N2YiLCJzcGFuSWQiOiI3N2NiZWVhZWZlNDBjNDY5Iiwic2FtcGxlZCI6IjEifSwiY29udGVudCI6eyJ0eXBlIjoicGFnZSIsInZlcnNpb24iOiIyIiwiaWQiOiIzNDI0NTUzMjE1In0sInNwYWNlIjp7ImtleSI6IkdBSSIsImlkIjoiMjk1MDc2Mzg3In19fSwiZXhwIjoxNzc5MzE0NzExLCJpYXQiOjE3NzkzMTM4MTF9.9nMHYA8JTCrMVauM1clItI_uScdwVCM6qRyicdBeWSQ",    "structuredContext": "{\"license\":{\"active\":true,\"capabilitySet\":\"capabilityStandard\"},\"confluence\":{\"editor\":{\"version\":\"v2\"},\"macro\":{\"outputType\":\"display\",\"hash\":\"8ee76038-dcb9-4d5b-95f1-e866a5a864af\",\"id\":\"8ee76038-dcb9-4d5b-95f1-e866a5a864af\"},\"tracing\":{\"traceId\":\"e9cd89f208004dc0b3bfa2b8bf0c477f\",\"spanId\":\"77cbeeaefe40c469\",\"sampled\":\"1\"},\"content\":{\"type\":\"page\",\"version\":\"2\",\"id\":\"3424553215\"},\"space\":{\"key\":\"GAI\",\"id\":\"295076387\"}},\"url\":{\"displayUrl\":\"https://marriottcloud.atlassian.net/wiki\"}}",
+    "contentClassifier":"content",
+    "productCtx":"{\"page.id\":\"3424553215\",\"macro.hash\":\"8ee76038-dcb9-4d5b-95f1-e866a5a864af\",\"mVer\":\"2\",\"tracing.sampled\":\"1\",\"page.type\":\"page\",\"macro.localId\":\"0c829f40-1750-4817-9bd4-7717bf398398\",\"simple\":\"0\",\"inComment\":\"0\",\": = | RAW | = :\":\"mVer=2|simple=0|zoom=1|inComment=0|pageId=3424553215|custContentId=3427501115|diagramDisplayName=Untitled Diagram-1774740016684.drawio|lbox=1|contentVer=1|revision=1|baseUrl=https://marriottcloud.atlassian.net/wiki|diagramName=Untitled Diagram-1774740016684.drawio|pCenter=0|width=912|links=|tbstyle=|height=500.5\",\"space.id\":\"295076387\",\"diagramDisplayName\":\"Untitled Diagram-1774740016684.drawio\",\"diagramName\":\"Untitled Diagram-1774740016684.drawio\",\"tracing.traceId\":\"e9cd89f208004dc0b3bfa2b8bf0c477f\",\"links\":\"\",\"tbstyle\":\"\",\"tracing.spanId\":\"77cbeeaefe40c469\",\"user.isExternalCollaborator\":\"false\",\"height\":\"500.5\",\"space.key\":\"GAI\",\"content.version\":\"2\",\"page.title\":\"Architecture\",\"zoom\":\"1\",\"macro.body\":\"\",\"pageId\":\"3424553215\",\"custContentId\":\"3427501115\",\"macro.truncated\":\"false\",\"lbox\":\"1\",\"content.type\":\"page\",\"output.type\":\"display\",\"contentVer\":\"1\",\"page.version\":\"2\",\"revision\":\"1\",\"baseUrl\":\"https://marriottcloud.atlassian.net/wiki\",\"macro.fragmentLocalId\":\"\",\"pCenter\":\"0\",\"content.id\":\"3424553215\",\"width\":\"912\",\"macro.id\":\"8ee76038-dcb9-4d5b-95f1-e866a5a864af\",\"editor.version\":\"v2\"}",
+    "timeZone":"UTC",
+    "origin":"https://ac.draw.io",
+    "hostOrigin":"https://marriottcloud.atlassian.net",
+    "sandbox":"allow-downloads allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-scripts allow-same-origin allow-top-navigation-by-user-activation allow-storage-access-by-user-activation",    "pearApp":"true",        "apiMigrations": {
+        "gdpr": true
+    }
+}
+;
+    if(window.AP && window.AP.subCreate) {
+      window._AP.appendConnectAddon(data);
+    } else {
+      require(['ac/create'], function(create){
+        create.appendConnectAddon(data);
+      });
+    }
+
+    // For Confluence App Analytics. This code works in conjunction with CFE's ConnectSupport.js.
+    // Here, we add a listener to the initial HTML page that stores events if the ConnectSupport component
+    // has not mounted yet. In CFE, we process the missed event data and disable this initial listener.
+    const __MAX_EVENT_ARRAY_SIZE__ = 20;
+    const connectAppAnalytics = "ecosystem.confluence.connect.analytics";
+    window.connectHost && window.connectHost.onIframeEstablished((eventData) => {
+      if (!window.__CONFLUENCE_CONNECT_SUPPORT_LOADED__) {
+        let events = JSON.parse(window.localStorage.getItem(connectAppAnalytics)) || [];
+        if (events.length >= __MAX_EVENT_ARRAY_SIZE__) {
+          events.shift();
+        }
+        events.push(eventData);
+        window.localStorage.setItem(connectAppAnalytics, JSON.stringify(events));
+      }
+    });
+
+  }());
+
+//]]>
+</script>
+
+</div>
+<h3 local-id="34921a84528a" id="Architecture-ToolConversion">Tool Conversion</h3><p local-id="de7a7a04da0d">MCP tools are automatically converted to SDK <code>Tool</code> objects, making them compatible with all agent types.</p><hr local-id="ff28f958c9a6"/><h2 local-id="9a34ec15d1eb" id="Architecture-5.DeploymentScenarios">5. Deployment Scenarios</h2><div class="table-wrap"><table data-table-width="760" data-layout="default" data-local-id="b421a1b01e1d" class="confluenceTable"><tbody><tr data-local-id="024896be3311"><th data-local-id="2722291cbb58" class="confluenceTh"><p local-id="fbc844593879">Mode</p></th><th data-local-id="4da1ea103563" class="confluenceTh"><p local-id="c8885a6d94e9">Architecture</p></th><th data-local-id="40b5a52c94fb" class="confluenceTh"><p local-id="73671a6ac8bb">Use Case</p></th></tr><tr data-local-id="907f07661597"><td data-local-id="f642241cffec" class="confluenceTd"><p local-id="c4192132ab4e"><strong>Library</strong></p></td><td data-local-id="8abc28b393d3" class="confluenceTd"><p local-id="623e752ff262">SDK imported into notebooks/scripts</p></td><td data-local-id="729f9d560a9c" class="confluenceTd"><p local-id="b38323a75eb1">Development, prototyping</p></td></tr><tr data-local-id="28c24588d1b5"><td data-local-id="8fa8902a5b29" class="confluenceTd"><p local-id="11e418dca9a8"><strong>Pipeline Server</strong></p></td><td data-local-id="aaecf6631ed0" class="confluenceTd"><p local-id="12128aa10db2">FastAPI with OpenAI-compatible API</p></td><td data-local-id="5539cb2d4419" class="confluenceTd"><p local-id="82b1c909b09c">Web UI, API consumers</p></td></tr><tr data-local-id="68127f4f93fd"><td data-local-id="4b2c543fa6fe" class="confluenceTd"><p local-id="ce30c99bc827"><strong>Worker</strong></p></td><td data-local-id="8d49e1dec00a" class="confluenceTd"><p local-id="c1aa47d7eb4f">Temporal-based intent runtime</p></td><td data-local-id="31edf7c725a1" class="confluenceTd"><p local-id="f9b16d19ee4a">Production workflows</p></td></tr></tbody></table></div><div class="ap-container conf-macro output-block" data-hasbody="false" data-layout="default" data-local-id="16bb261e-6a27-4973-ae0a-67671e0da060" data-macro-id="5432086b-c3dd-4382-8c54-f39e813abd67" data-macro-name="drawio" id="ap-com.mxgraph.confluence.plugins.diagramly__drawio8716852137756325164">
+
+  
+  <div class="ap-content " id="embedded-com.mxgraph.confluence.plugins.diagramly__drawio8716852137756325164"> </div>
+  <script nonce="e9cd89f208004dc0b3bfa2b8bf0c477f" class="ap-iframe-body-script">//<![CDATA[
+
+  (function(){
+    var data = {
+    "addon_key":"com.mxgraph.confluence.plugins.diagramly",
+    "uniqueKey":"com.mxgraph.confluence.plugins.diagramly__drawio8716852137756325164",
+    "key":"drawio",
+     "moduleType":"dynamicContentMacros",      "moduleLocation":"content",         "cp":"/wiki",
+            "general":"",
+    "w":"",
+    "h":"",
+    "url":"https://ac.draw.io/connect/confluence/viewer-1-4-42.html?ceoId=3424553215&diagramName=DEPLOYMENT+ARCHITECTURE.drawio&revision=1&width=902&height=608.5&tbstyle=&simple=0&lbox=1&zoom=1&links=&owningPageId=3424553215&displayName=DEPLOYMENT+ARCHITECTURE.drawio&contentId=&custContentId=3427501128&contentVer=1&inComment=0&aspect=&pCenter=0&hiRes=&templateUrl=&tmpBuiltIn=&mVer=2&pageInfo=&tempPreview=&xdm_e=https%3A%2F%2Fmarriottcloud.atlassian.net&xdm_c=channel-com.mxgraph.confluence.plugins.diagramly__drawio8716852137756325164&cp=%2Fwiki&xdm_deprecated_addon_key_do_not_use=com.mxgraph.confluence.plugins.diagramly&lic=active&capSet=capabilityStandard&userAccess=true&cv=1000.0.0-f9a5858cb377&traceId=e9cd89f208004dc0b3bfa2b8bf0c477f&spanId=8328197e6697bc69&traceSampled=1&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI3MTIwMjA6NTRhY2IzMjItNzNlOS00N2RlLTgyOGYtMDYwN2I4YzZmZmJhIiwicXNoIjoiNTYwNGY4NDdlMjc0YTQ0NWZhMWM2N2VkMmFhODc4ZGVjYWRjZDJiOGM3MDY5ZWY3NjAyNzA5OGQyYTUxMWE0MyIsImlzcyI6IjBlMjkzY2NhLWY4YzQtMzVjOC1hNjMzLWY0YzE4N2E4ZGE4OCIsImNvbnRleHQiOnt9LCJleHAiOjE3NzkzMTM5OTEsImlhdCI6MTc3OTMxMzgxMX0.3rMd1WaFcal1Ses-57Swv4hRsKdzDTWFtah04REkWuw",
+     "contextJwt": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI3MTIwMjA6NTRhY2IzMjItNzNlOS00N2RlLTgyOGYtMDYwN2I4YzZmZmJhIiwicXNoIjoiY29udGV4dC1xc2giLCJpc3MiOiIwZTI5M2NjYS1mOGM0LTM1YzgtYTYzMy1mNGMxODdhOGRhODgiLCJjb250ZXh0Ijp7ImxpY2Vuc2UiOnsiYWN0aXZlIjp0cnVlLCJjYXBhYmlsaXR5U2V0IjoiY2FwYWJpbGl0eVN0YW5kYXJkIn0sInVybCI6eyJkaXNwbGF5VXJsIjoiaHR0cHM6XC9cL21hcnJpb3R0Y2xvdWQuYXRsYXNzaWFuLm5ldFwvd2lraSJ9LCJjb25mbHVlbmNlIjp7ImVkaXRvciI6eyJ2ZXJzaW9uIjoidjIifSwibWFjcm8iOnsib3V0cHV0VHlwZSI6ImRpc3BsYXkiLCJoYXNoIjoiNTQzMjA4NmItYzNkZC00MzgyLThjNTQtZjM5ZTgxM2FiZDY3IiwiaWQiOiI1NDMyMDg2Yi1jM2RkLTQzODItOGM1NC1mMzllODEzYWJkNjcifSwidHJhY2luZyI6eyJ0cmFjZUlkIjoiZTljZDg5ZjIwODAwNGRjMGIzYmZhMmI4YmYwYzQ3N2YiLCJzcGFuSWQiOiI4MzI4MTk3ZTY2OTdiYzY5Iiwic2FtcGxlZCI6IjEifSwiY29udGVudCI6eyJ0eXBlIjoicGFnZSIsInZlcnNpb24iOiIyIiwiaWQiOiIzNDI0NTUzMjE1In0sInNwYWNlIjp7ImtleSI6IkdBSSIsImlkIjoiMjk1MDc2Mzg3In19fSwiZXhwIjoxNzc5MzE0NzExLCJpYXQiOjE3NzkzMTM4MTF9.-DfL9x4bu3k2LT4TcXArWndxslFU2Zi1H9hW0eqEHjU",    "structuredContext": "{\"license\":{\"active\":true,\"capabilitySet\":\"capabilityStandard\"},\"confluence\":{\"editor\":{\"version\":\"v2\"},\"macro\":{\"outputType\":\"display\",\"hash\":\"5432086b-c3dd-4382-8c54-f39e813abd67\",\"id\":\"5432086b-c3dd-4382-8c54-f39e813abd67\"},\"tracing\":{\"traceId\":\"e9cd89f208004dc0b3bfa2b8bf0c477f\",\"spanId\":\"8328197e6697bc69\",\"sampled\":\"1\"},\"content\":{\"type\":\"page\",\"version\":\"2\",\"id\":\"3424553215\"},\"space\":{\"key\":\"GAI\",\"id\":\"295076387\"}},\"url\":{\"displayUrl\":\"https://marriottcloud.atlassian.net/wiki\"}}",
+    "contentClassifier":"content",
+    "productCtx":"{\"page.id\":\"3424553215\",\"macro.hash\":\"5432086b-c3dd-4382-8c54-f39e813abd67\",\"mVer\":\"2\",\"tracing.sampled\":\"1\",\"page.type\":\"page\",\"macro.localId\":\"16bb261e-6a27-4973-ae0a-67671e0da060\",\"simple\":\"0\",\"inComment\":\"0\",\": = | RAW | = :\":\"mVer=2|simple=0|zoom=1|inComment=0|pageId=3424553215|custContentId=3427501128|diagramDisplayName=DEPLOYMENT ARCHITECTURE.drawio|lbox=1|contentVer=1|revision=1|baseUrl=https://marriottcloud.atlassian.net/wiki|diagramName=DEPLOYMENT ARCHITECTURE.drawio|pCenter=0|width=902|links=|tbstyle=|height=608.5\",\"space.id\":\"295076387\",\"diagramDisplayName\":\"DEPLOYMENT ARCHITECTURE.drawio\",\"diagramName\":\"DEPLOYMENT ARCHITECTURE.drawio\",\"tracing.traceId\":\"e9cd89f208004dc0b3bfa2b8bf0c477f\",\"links\":\"\",\"tbstyle\":\"\",\"tracing.spanId\":\"8328197e6697bc69\",\"user.isExternalCollaborator\":\"false\",\"height\":\"608.5\",\"space.key\":\"GAI\",\"content.version\":\"2\",\"page.title\":\"Architecture\",\"zoom\":\"1\",\"macro.body\":\"\",\"pageId\":\"3424553215\",\"custContentId\":\"3427501128\",\"macro.truncated\":\"false\",\"lbox\":\"1\",\"content.type\":\"page\",\"output.type\":\"display\",\"contentVer\":\"1\",\"page.version\":\"2\",\"revision\":\"1\",\"baseUrl\":\"https://marriottcloud.atlassian.net/wiki\",\"macro.fragmentLocalId\":\"\",\"pCenter\":\"0\",\"content.id\":\"3424553215\",\"width\":\"902\",\"macro.id\":\"5432086b-c3dd-4382-8c54-f39e813abd67\",\"editor.version\":\"v2\"}",
+    "timeZone":"UTC",
+    "origin":"https://ac.draw.io",
+    "hostOrigin":"https://marriottcloud.atlassian.net",
+    "sandbox":"allow-downloads allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-scripts allow-same-origin allow-top-navigation-by-user-activation allow-storage-access-by-user-activation",    "pearApp":"true",        "apiMigrations": {
+        "gdpr": true
+    }
+}
+;
+    if(window.AP && window.AP.subCreate) {
+      window._AP.appendConnectAddon(data);
+    } else {
+      require(['ac/create'], function(create){
+        create.appendConnectAddon(data);
+      });
+    }
+
+    // For Confluence App Analytics. This code works in conjunction with CFE's ConnectSupport.js.
+    // Here, we add a listener to the initial HTML page that stores events if the ConnectSupport component
+    // has not mounted yet. In CFE, we process the missed event data and disable this initial listener.
+    const __MAX_EVENT_ARRAY_SIZE__ = 20;
+    const connectAppAnalytics = "ecosystem.confluence.connect.analytics";
+    window.connectHost && window.connectHost.onIframeEstablished((eventData) => {
+      if (!window.__CONFLUENCE_CONNECT_SUPPORT_LOADED__) {
+        let events = JSON.parse(window.localStorage.getItem(connectAppAnalytics)) || [];
+        if (events.length >= __MAX_EVENT_ARRAY_SIZE__) {
+          events.shift();
+        }
+        events.push(eventData);
+        window.localStorage.setItem(connectAppAnalytics, JSON.stringify(events));
+      }
+    });
+
+  }());
+
+//]]>
+</script>
+
+</div>
+<hr local-id="aa47a05d5f19"/><h2 local-id="6e2b814e72ed" id="Architecture-6.SecurityArchitecture">6. Security Architecture</h2><div class="ap-container conf-macro output-block" data-hasbody="false" data-layout="default" data-local-id="cc93ee7e-65e3-4798-a53b-09d197d37b4c" data-macro-id="020f440d-d304-46f7-bcc6-17fab6f9f9de" data-macro-name="drawio" id="ap-com.mxgraph.confluence.plugins.diagramly__drawio85720516400159605">
+
+  
+  <div class="ap-content " id="embedded-com.mxgraph.confluence.plugins.diagramly__drawio85720516400159605"> </div>
+  <script nonce="e9cd89f208004dc0b3bfa2b8bf0c477f" class="ap-iframe-body-script">//<![CDATA[
+
+  (function(){
+    var data = {
+    "addon_key":"com.mxgraph.confluence.plugins.diagramly",
+    "uniqueKey":"com.mxgraph.confluence.plugins.diagramly__drawio85720516400159605",
+    "key":"drawio",
+     "moduleType":"dynamicContentMacros",      "moduleLocation":"content",         "cp":"/wiki",
+            "general":"",
+    "w":"",
+    "h":"",
+    "url":"https://ac.draw.io/connect/confluence/viewer-1-4-42.html?ceoId=3424553215&diagramName=L2+SECURITY+CONTROLS+MAPPING.drawio&revision=1&width=752&height=551&tbstyle=&simple=0&lbox=1&zoom=1&links=&owningPageId=3424553215&displayName=L2+SECURITY+CONTROLS+MAPPING.drawio&contentId=&custContentId=3428614165&contentVer=1&inComment=0&aspect=&pCenter=0&hiRes=&templateUrl=&tmpBuiltIn=&mVer=2&pageInfo=&tempPreview=&xdm_e=https%3A%2F%2Fmarriottcloud.atlassian.net&xdm_c=channel-com.mxgraph.confluence.plugins.diagramly__drawio85720516400159605&cp=%2Fwiki&xdm_deprecated_addon_key_do_not_use=com.mxgraph.confluence.plugins.diagramly&lic=active&capSet=capabilityStandard&userAccess=true&cv=1000.0.0-f9a5858cb377&traceId=e9cd89f208004dc0b3bfa2b8bf0c477f&spanId=e963a67e11b3c498&traceSampled=1&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI3MTIwMjA6NTRhY2IzMjItNzNlOS00N2RlLTgyOGYtMDYwN2I4YzZmZmJhIiwicXNoIjoiMDQ4ZWRhMzdmYzc0ZDg2ODUzNzI4NWJjZTE3NmExZmQ4MWM5ODk5YTMzNDU5YzAyMzIwNjhiMzQ2MTUwNzgwMCIsImlzcyI6IjBlMjkzY2NhLWY4YzQtMzVjOC1hNjMzLWY0YzE4N2E4ZGE4OCIsImNvbnRleHQiOnt9LCJleHAiOjE3NzkzMTM5OTEsImlhdCI6MTc3OTMxMzgxMX0.PbsAVc5uJ7L63SNrbbEnxmCDngbgvHsA2InSv55D8JA",
+     "contextJwt": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI3MTIwMjA6NTRhY2IzMjItNzNlOS00N2RlLTgyOGYtMDYwN2I4YzZmZmJhIiwicXNoIjoiY29udGV4dC1xc2giLCJpc3MiOiIwZTI5M2NjYS1mOGM0LTM1YzgtYTYzMy1mNGMxODdhOGRhODgiLCJjb250ZXh0Ijp7ImxpY2Vuc2UiOnsiYWN0aXZlIjp0cnVlLCJjYXBhYmlsaXR5U2V0IjoiY2FwYWJpbGl0eVN0YW5kYXJkIn0sInVybCI6eyJkaXNwbGF5VXJsIjoiaHR0cHM6XC9cL21hcnJpb3R0Y2xvdWQuYXRsYXNzaWFuLm5ldFwvd2lraSJ9LCJjb25mbHVlbmNlIjp7ImVkaXRvciI6eyJ2ZXJzaW9uIjoidjIifSwibWFjcm8iOnsib3V0cHV0VHlwZSI6ImRpc3BsYXkiLCJoYXNoIjoiMDIwZjQ0MGQtZDMwNC00NmY3LWJjYzYtMTdmYWI2ZjlmOWRlIiwiaWQiOiIwMjBmNDQwZC1kMzA0LTQ2ZjctYmNjNi0xN2ZhYjZmOWY5ZGUifSwidHJhY2luZyI6eyJ0cmFjZUlkIjoiZTljZDg5ZjIwODAwNGRjMGIzYmZhMmI4YmYwYzQ3N2YiLCJzcGFuSWQiOiJlOTYzYTY3ZTExYjNjNDk4Iiwic2FtcGxlZCI6IjEifSwiY29udGVudCI6eyJ0eXBlIjoicGFnZSIsInZlcnNpb24iOiIyIiwiaWQiOiIzNDI0NTUzMjE1In0sInNwYWNlIjp7ImtleSI6IkdBSSIsImlkIjoiMjk1MDc2Mzg3In19fSwiZXhwIjoxNzc5MzE0NzExLCJpYXQiOjE3NzkzMTM4MTF9.PJU8tN5krZpw-asswxbtS3b0KExGGmC3_INNTc2M9DM",    "structuredContext": "{\"license\":{\"active\":true,\"capabilitySet\":\"capabilityStandard\"},\"confluence\":{\"editor\":{\"version\":\"v2\"},\"macro\":{\"outputType\":\"display\",\"hash\":\"020f440d-d304-46f7-bcc6-17fab6f9f9de\",\"id\":\"020f440d-d304-46f7-bcc6-17fab6f9f9de\"},\"tracing\":{\"traceId\":\"e9cd89f208004dc0b3bfa2b8bf0c477f\",\"spanId\":\"e963a67e11b3c498\",\"sampled\":\"1\"},\"content\":{\"type\":\"page\",\"version\":\"2\",\"id\":\"3424553215\"},\"space\":{\"key\":\"GAI\",\"id\":\"295076387\"}},\"url\":{\"displayUrl\":\"https://marriottcloud.atlassian.net/wiki\"}}",
+    "contentClassifier":"content",
+    "productCtx":"{\"page.id\":\"3424553215\",\"macro.hash\":\"020f440d-d304-46f7-bcc6-17fab6f9f9de\",\"mVer\":\"2\",\"tracing.sampled\":\"1\",\"page.type\":\"page\",\"macro.localId\":\"cc93ee7e-65e3-4798-a53b-09d197d37b4c\",\"simple\":\"0\",\"inComment\":\"0\",\": = | RAW | = :\":\"mVer=2|simple=0|zoom=1|inComment=0|pageId=3424553215|custContentId=3428614165|diagramDisplayName=L2 SECURITY CONTROLS MAPPING.drawio|lbox=1|contentVer=1|revision=1|baseUrl=https://marriottcloud.atlassian.net/wiki|diagramName=L2 SECURITY CONTROLS MAPPING.drawio|pCenter=0|width=752|links=|tbstyle=|height=551\",\"space.id\":\"295076387\",\"diagramDisplayName\":\"L2 SECURITY CONTROLS MAPPING.drawio\",\"diagramName\":\"L2 SECURITY CONTROLS MAPPING.drawio\",\"tracing.traceId\":\"e9cd89f208004dc0b3bfa2b8bf0c477f\",\"links\":\"\",\"tbstyle\":\"\",\"tracing.spanId\":\"e963a67e11b3c498\",\"user.isExternalCollaborator\":\"false\",\"height\":\"551\",\"space.key\":\"GAI\",\"content.version\":\"2\",\"page.title\":\"Architecture\",\"zoom\":\"1\",\"macro.body\":\"\",\"pageId\":\"3424553215\",\"custContentId\":\"3428614165\",\"macro.truncated\":\"false\",\"lbox\":\"1\",\"content.type\":\"page\",\"output.type\":\"display\",\"contentVer\":\"1\",\"page.version\":\"2\",\"revision\":\"1\",\"baseUrl\":\"https://marriottcloud.atlassian.net/wiki\",\"macro.fragmentLocalId\":\"\",\"pCenter\":\"0\",\"content.id\":\"3424553215\",\"width\":\"752\",\"macro.id\":\"020f440d-d304-46f7-bcc6-17fab6f9f9de\",\"editor.version\":\"v2\"}",
+    "timeZone":"UTC",
+    "origin":"https://ac.draw.io",
+    "hostOrigin":"https://marriottcloud.atlassian.net",
+    "sandbox":"allow-downloads allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-scripts allow-same-origin allow-top-navigation-by-user-activation allow-storage-access-by-user-activation",    "pearApp":"true",        "apiMigrations": {
+        "gdpr": true
+    }
+}
+;
+    if(window.AP && window.AP.subCreate) {
+      window._AP.appendConnectAddon(data);
+    } else {
+      require(['ac/create'], function(create){
+        create.appendConnectAddon(data);
+      });
+    }
+
+    // For Confluence App Analytics. This code works in conjunction with CFE's ConnectSupport.js.
+    // Here, we add a listener to the initial HTML page that stores events if the ConnectSupport component
+    // has not mounted yet. In CFE, we process the missed event data and disable this initial listener.
+    const __MAX_EVENT_ARRAY_SIZE__ = 20;
+    const connectAppAnalytics = "ecosystem.confluence.connect.analytics";
+    window.connectHost && window.connectHost.onIframeEstablished((eventData) => {
+      if (!window.__CONFLUENCE_CONNECT_SUPPORT_LOADED__) {
+        let events = JSON.parse(window.localStorage.getItem(connectAppAnalytics)) || [];
+        if (events.length >= __MAX_EVENT_ARRAY_SIZE__) {
+          events.shift();
+        }
+        events.push(eventData);
+        window.localStorage.setItem(connectAppAnalytics, JSON.stringify(events));
+      }
+    });
+
+  }());
+
+//]]>
+</script>
+
+</div>
+<hr local-id="aff464db2e32"/><h2 local-id="2dc6ad80d9ad" id="Architecture-7.HookandEventLifecycle">7. Hook and Event Lifecycle</h2><div class="ap-container conf-macro output-block" data-hasbody="false" data-layout="default" data-local-id="f28e4edf-1e1d-4f71-a6cc-ed0cbe97ba9a" data-macro-id="f991c6ab-67df-487d-8ae8-4914ecfea0b7" data-macro-name="drawio" id="ap-com.mxgraph.confluence.plugins.diagramly__drawio8080554556050606895">
+
+  
+  <div class="ap-content " id="embedded-com.mxgraph.confluence.plugins.diagramly__drawio8080554556050606895"> </div>
+  <script nonce="e9cd89f208004dc0b3bfa2b8bf0c477f" class="ap-iframe-body-script">//<![CDATA[
+
+  (function(){
+    var data = {
+    "addon_key":"com.mxgraph.confluence.plugins.diagramly",
+    "uniqueKey":"com.mxgraph.confluence.plugins.diagramly__drawio8080554556050606895",
+    "key":"drawio",
+     "moduleType":"dynamicContentMacros",      "moduleLocation":"content",         "cp":"/wiki",
+            "general":"",
+    "w":"",
+    "h":"",
+    "url":"https://ac.draw.io/connect/confluence/viewer-1-4-42.html?ceoId=3424553215&diagramName=HOOK+EVENT+LIFECYCLE.drawio&revision=1&width=852&height=555.5&tbstyle=&simple=0&lbox=1&zoom=1&links=&owningPageId=3424553215&displayName=HOOK+EVENT+LIFECYCLE.drawio&contentId=&custContentId=3423374136&contentVer=1&inComment=0&aspect=&pCenter=0&hiRes=&templateUrl=&tmpBuiltIn=&mVer=2&pageInfo=&tempPreview=&xdm_e=https%3A%2F%2Fmarriottcloud.atlassian.net&xdm_c=channel-com.mxgraph.confluence.plugins.diagramly__drawio8080554556050606895&cp=%2Fwiki&xdm_deprecated_addon_key_do_not_use=com.mxgraph.confluence.plugins.diagramly&lic=active&capSet=capabilityStandard&userAccess=true&cv=1000.0.0-f9a5858cb377&traceId=e9cd89f208004dc0b3bfa2b8bf0c477f&spanId=2af5162832a750f8&traceSampled=1&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI3MTIwMjA6NTRhY2IzMjItNzNlOS00N2RlLTgyOGYtMDYwN2I4YzZmZmJhIiwicXNoIjoiMDcwYWVjNjNjYzdjYmM1NTk1NWM2NzJlYzFlMDk3ODE0N2ZjYWFiMzcwZmQyZmI4MDg0YjY4MjAxMjIwZTBjZCIsImlzcyI6IjBlMjkzY2NhLWY4YzQtMzVjOC1hNjMzLWY0YzE4N2E4ZGE4OCIsImNvbnRleHQiOnt9LCJleHAiOjE3NzkzMTM5OTEsImlhdCI6MTc3OTMxMzgxMX0.NaIOhUVp4yUxyA3XvML9k-cqnxRWqAXb5MxI-SCB75E",
+     "contextJwt": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI3MTIwMjA6NTRhY2IzMjItNzNlOS00N2RlLTgyOGYtMDYwN2I4YzZmZmJhIiwicXNoIjoiY29udGV4dC1xc2giLCJpc3MiOiIwZTI5M2NjYS1mOGM0LTM1YzgtYTYzMy1mNGMxODdhOGRhODgiLCJjb250ZXh0Ijp7ImxpY2Vuc2UiOnsiYWN0aXZlIjp0cnVlLCJjYXBhYmlsaXR5U2V0IjoiY2FwYWJpbGl0eVN0YW5kYXJkIn0sInVybCI6eyJkaXNwbGF5VXJsIjoiaHR0cHM6XC9cL21hcnJpb3R0Y2xvdWQuYXRsYXNzaWFuLm5ldFwvd2lraSJ9LCJjb25mbHVlbmNlIjp7ImVkaXRvciI6eyJ2ZXJzaW9uIjoidjIifSwibWFjcm8iOnsib3V0cHV0VHlwZSI6ImRpc3BsYXkiLCJoYXNoIjoiZjk5MWM2YWItNjdkZi00ODdkLThhZTgtNDkxNGVjZmVhMGI3IiwiaWQiOiJmOTkxYzZhYi02N2RmLTQ4N2QtOGFlOC00OTE0ZWNmZWEwYjcifSwidHJhY2luZyI6eyJ0cmFjZUlkIjoiZTljZDg5ZjIwODAwNGRjMGIzYmZhMmI4YmYwYzQ3N2YiLCJzcGFuSWQiOiIyYWY1MTYyODMyYTc1MGY4Iiwic2FtcGxlZCI6IjEifSwiY29udGVudCI6eyJ0eXBlIjoicGFnZSIsInZlcnNpb24iOiIyIiwiaWQiOiIzNDI0NTUzMjE1In0sInNwYWNlIjp7ImtleSI6IkdBSSIsImlkIjoiMjk1MDc2Mzg3In19fSwiZXhwIjoxNzc5MzE0NzExLCJpYXQiOjE3NzkzMTM4MTF9.lg-E7x2okIUFtR5Z2aemX9gn2iAokFB4zaLwy59JUl4",    "structuredContext": "{\"license\":{\"active\":true,\"capabilitySet\":\"capabilityStandard\"},\"confluence\":{\"editor\":{\"version\":\"v2\"},\"macro\":{\"outputType\":\"display\",\"hash\":\"f991c6ab-67df-487d-8ae8-4914ecfea0b7\",\"id\":\"f991c6ab-67df-487d-8ae8-4914ecfea0b7\"},\"tracing\":{\"traceId\":\"e9cd89f208004dc0b3bfa2b8bf0c477f\",\"spanId\":\"2af5162832a750f8\",\"sampled\":\"1\"},\"content\":{\"type\":\"page\",\"version\":\"2\",\"id\":\"3424553215\"},\"space\":{\"key\":\"GAI\",\"id\":\"295076387\"}},\"url\":{\"displayUrl\":\"https://marriottcloud.atlassian.net/wiki\"}}",
+    "contentClassifier":"content",
+    "productCtx":"{\"page.id\":\"3424553215\",\"macro.hash\":\"f991c6ab-67df-487d-8ae8-4914ecfea0b7\",\"mVer\":\"2\",\"tracing.sampled\":\"1\",\"page.type\":\"page\",\"macro.localId\":\"f28e4edf-1e1d-4f71-a6cc-ed0cbe97ba9a\",\"simple\":\"0\",\"inComment\":\"0\",\": = | RAW | = :\":\"mVer=2|simple=0|zoom=1|inComment=0|pageId=3424553215|custContentId=3423374136|diagramDisplayName=HOOK EVENT LIFECYCLE.drawio|lbox=1|contentVer=1|revision=1|baseUrl=https://marriottcloud.atlassian.net/wiki|diagramName=HOOK EVENT LIFECYCLE.drawio|pCenter=0|width=852|links=|tbstyle=|height=555.5\",\"space.id\":\"295076387\",\"diagramDisplayName\":\"HOOK EVENT LIFECYCLE.drawio\",\"diagramName\":\"HOOK EVENT LIFECYCLE.drawio\",\"tracing.traceId\":\"e9cd89f208004dc0b3bfa2b8bf0c477f\",\"links\":\"\",\"tbstyle\":\"\",\"tracing.spanId\":\"2af5162832a750f8\",\"user.isExternalCollaborator\":\"false\",\"height\":\"555.5\",\"space.key\":\"GAI\",\"content.version\":\"2\",\"page.title\":\"Architecture\",\"zoom\":\"1\",\"macro.body\":\"\",\"pageId\":\"3424553215\",\"custContentId\":\"3423374136\",\"macro.truncated\":\"false\",\"lbox\":\"1\",\"content.type\":\"page\",\"output.type\":\"display\",\"contentVer\":\"1\",\"page.version\":\"2\",\"revision\":\"1\",\"baseUrl\":\"https://marriottcloud.atlassian.net/wiki\",\"macro.fragmentLocalId\":\"\",\"pCenter\":\"0\",\"content.id\":\"3424553215\",\"width\":\"852\",\"macro.id\":\"f991c6ab-67df-487d-8ae8-4914ecfea0b7\",\"editor.version\":\"v2\"}",
+    "timeZone":"UTC",
+    "origin":"https://ac.draw.io",
+    "hostOrigin":"https://marriottcloud.atlassian.net",
+    "sandbox":"allow-downloads allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-scripts allow-same-origin allow-top-navigation-by-user-activation allow-storage-access-by-user-activation",    "pearApp":"true",        "apiMigrations": {
+        "gdpr": true
+    }
+}
+;
+    if(window.AP && window.AP.subCreate) {
+      window._AP.appendConnectAddon(data);
+    } else {
+      require(['ac/create'], function(create){
+        create.appendConnectAddon(data);
+      });
+    }
+
+    // For Confluence App Analytics. This code works in conjunction with CFE's ConnectSupport.js.
+    // Here, we add a listener to the initial HTML page that stores events if the ConnectSupport component
+    // has not mounted yet. In CFE, we process the missed event data and disable this initial listener.
+    const __MAX_EVENT_ARRAY_SIZE__ = 20;
+    const connectAppAnalytics = "ecosystem.confluence.connect.analytics";
+    window.connectHost && window.connectHost.onIframeEstablished((eventData) => {
+      if (!window.__CONFLUENCE_CONNECT_SUPPORT_LOADED__) {
+        let events = JSON.parse(window.localStorage.getItem(connectAppAnalytics)) || [];
+        if (events.length >= __MAX_EVENT_ARRAY_SIZE__) {
+          events.shift();
+        }
+        events.push(eventData);
+        window.localStorage.setItem(connectAppAnalytics, JSON.stringify(events));
+      }
+    });
+
+  }());
+
+//]]>
+</script>
+
+</div>
+<p local-id="dfb52bdbf424"><strong>EventBus</strong>: Components emit events, subscribers (logging, metrics, alerts) react.</p><hr local-id="b41ba7e8c52d"/><h2 local-id="92a858f653c8" id="Architecture-8.KeyDesignDecisions">8. Key Design Decisions</h2><div class="table-wrap"><table data-table-width="760" data-layout="default" data-local-id="04433729f39d" class="confluenceTable"><tbody><tr data-local-id="528ef7cf6cd3"><th data-local-id="be280d61e1c6" class="confluenceTh"><p local-id="5736f18c5255">Decision</p></th><th data-local-id="f2c8d3c86bbe" class="confluenceTh"><p local-id="b7fbdab9ca22">Rationale</p></th></tr><tr data-local-id="f86cfbe0707c"><td data-local-id="40a328f4488c" class="confluenceTd"><p local-id="f30ab6f27ba2"><strong>Lazy imports (PEP 562)</strong></p></td><td data-local-id="c12e3651275c" class="confluenceTd"><p local-id="95f38db9ef6f">Fast startup; heavy deps loaded only when needed</p></td></tr><tr data-local-id="88abfc32dedd"><td data-local-id="45a1f3187892" class="confluenceTd"><p local-id="6d37b640453f"><strong>Pydantic v2</strong></p></td><td data-local-id="7938dcbd738f" class="confluenceTd"><p local-id="1584ff10a27e">Validation + serialization for all API types</p></td></tr><tr data-local-id="e6517e74aadb"><td data-local-id="a36187cdf0b4" class="confluenceTd"><p local-id="922424c192bf"><strong>Google-style docstrings</strong></p></td><td data-local-id="068c699fc9f1" class="confluenceTd"><p local-id="fdc5b5bf5d36">Sphinx autodoc compatibility</p></td></tr><tr data-local-id="4ea476c0dd56"><td data-local-id="bbb5ab98ef14" class="confluenceTd"><p local-id="2620d9df2be8"><strong>Mock imports in Sphinx</strong></p></td><td data-local-id="7db9cb489287" class="confluenceTd"><p local-id="6ac0782bb207">Build docs without heavy optional deps</p></td></tr><tr data-local-id="f23fc797ec59"><td data-local-id="e0c1267530c7" class="confluenceTd"><p local-id="c1117a4636e0"><strong>3-layer capabilities</strong></p></td><td data-local-id="c76070a01240" class="confluenceTd"><p local-id="a7b5bbca8393">Provider defaults → pattern overrides → YAML config</p></td></tr><tr data-local-id="7aac1d272941"><td data-local-id="c36ff1c85c32" class="confluenceTd"><p local-id="6284e3a21e20"><strong>LiteLLM abstraction</strong></p></td><td data-local-id="0deeebafac91" class="confluenceTd"><p local-id="dc3fb69aa5af">Provider independence (100+ providers)</p></td></tr><tr data-local-id="55ba7621640c"><td data-local-id="5062eac0480b" class="confluenceTd"><p local-id="068b994ff2ee"><strong>OpenAI-compatible API</strong></p></td><td data-local-id="cc8d13f4a265" class="confluenceTd"><p local-id="133c13f4ece7">Familiar patterns, easy adoption</p></td></tr><tr data-local-id="1e66257ea79d"><td data-local-id="566dd051a992" class="confluenceTd"><p local-id="9dcb67f9964c"><strong>Temporal for production</strong></p></td><td data-local-id="4b8a9e454f71" class="confluenceTd"><p local-id="d8a3d3f1b738">Durable workflows, automatic retries, event sourcing</p></td></tr></tbody></table></div>
