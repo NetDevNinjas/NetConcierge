@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-## Belt-and-suspenders: also set via sysctls in docker-compose.yml
-echo 1 > /proc/sys/net/ipv4/ip_forward
+## ip_forward is set via sysctls in docker-compose.yml before this script runs.
+## Writing to /proc/sys/net/ipv4/ip_forward directly would fail (read-only in container).
 
 ## DNAT: redirect HTTP traffic arriving from the client (front-net/eth0)
 ## to the webserver via path-a by default (172.21.0.10).
