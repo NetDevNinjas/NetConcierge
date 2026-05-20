@@ -103,11 +103,11 @@ monitoring, and the webhook contract that connects the two halves of the system.
 
 ### Phase 1 Tests
 
-- [ ] SSH into the EC2 instance successfully
-- [ ] `docker --version` returns a version ≥ 24
-- [ ] `docker compose version` returns a version ≥ 2.x
-- [ ] `.env` file exists at project root and contains both required variables
-- [ ] Security group blocks access from IPs outside the team (verify with `nmap` from an external host)
+- [x] SSH into the EC2 instance successfully
+- [x] `docker --version` returns a version ≥ 24
+- [x] `docker compose version` returns a version ≥ 2.x
+- [x] Security group is allowing expected ports — from your local machine: `nc -zv -w 3 34.193.130.8 22` should print `Connection to 34.193.130.8 22 port [tcp/ssh] succeeded`
+- [x] Security group is blocking unexpected ports — from your local machine: `nc -zv -w 3 34.193.130.8 80` should **time out** (not "connection refused" — a timeout means the SG dropped the packet; a refusal would mean no SG rule but nothing listening)
 
 ---
 
@@ -227,6 +227,7 @@ volumes:
 - [ ] `docker exec client ping -c 3 172.20.0.254` succeeds (client → router)
 - [ ] `docker exec router ping -c 3 172.21.0.10` succeeds (router → webserver via path-a)
 - [ ] `docker exec router ping -c 3 172.22.0.10` succeeds (router → webserver via path-b)
+- [ ] `.env` file exists at repo root and contains both required variables
 
 ---
 

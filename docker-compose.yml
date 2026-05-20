@@ -1,0 +1,102 @@
+name: netconcierge
+
+networks:
+  front-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+  path-a-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/24
+  path-b-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.22.0.0/24
+
+services:
+
+  webserver:
+    image: nginx:alpine
+    container_name: webserver
+    networks:
+      path-a-net:
+        ipv4_address: 172.21.0.10
+      path-b-net:
+        ipv4_address: 172.22.0.10
+    volumes:
+      - ./webserver/html:/usr/share/nginx/html:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+  router:
+    build: ./router
+    container_name: router
+    cap_add:
+      - NET_ADMIN
+    sysctls:
+      - net.ipv4.ip_forward=1
+    networks:
+      front-net:
+        ipv4_address: 172.20.0.254
+      path-a-net:
+        ipv4_address: 172.21.0.254
+      path-b-net:
+        ipv4_address: 172.22.0.254
+    ports:
+      - "5000:5000"
+    depends_on:
+      webserver:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  client:
+    build: ./client
+    container_name: client
+    networks:
+      front-net:
+        ipv4_address: 172.20.0.10
+    depends_on:
+      router:
+        condition: service_healthy
+    environment:
+      - TARGET_URL=http://172.20.0.254/
+
+  agent:
+    build: ./agent
+    container_name: agent
+    networks:
+      - front-net
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    env_file:
+      - .env
+    environment:
+      - ROUTER_API=http://172.20.0.254:5000
+    ports:
+      - "8080:8080"
+    depends_on:
+      router:
+        condition: service_healthy
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: uptime-kuma
+    volumes:
+      - uptime-kuma-data:/app/data
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+
+volumes:
+  uptime-kuma-data:
