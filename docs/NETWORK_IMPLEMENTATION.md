@@ -43,7 +43,7 @@ monitoring, and the webhook contract that connects the two halves of the system.
 | `client`     | `front-net`                           | Simulates a hotel guest device; HTTP loop    |
 | `router`     | `front-net`, `path-a-net`, `path-b-net` | Alpine + iptables/tc; fault injection target |
 | `webserver`  | `path-a-net`, `path-b-net`            | nginx; simulates hotel internet portal       |
-| `agent`      | `front-net` + docker socket           | Python/Anthropic LLM troubleshooting loop    |
+| `agent`      | `front-net` + docker socket           | Python/TIP.ai LLM troubleshooting loop       |
 | `uptime-kuma`| host port 3001                        | External monitoring / demo status board      |
 
 **Docker Networks:**
@@ -91,13 +91,15 @@ monitoring, and the webhook contract that connects the two halves of the system.
    git clone https://github.com/<org>/NetConcierge.git /opt/netconcierge
    cd /opt/netconcierge
    cp .env.example .env
-   # Edit .env and add ANTHROPIC_API_KEY and WEBHOOK_URL before starting
+   # Edit .env and fill in TIP_API_KEY, ARTIFACTORY credentials, and WEBHOOK_URL before starting
    ```
 
 4. **Set environment variables** — create `.env` in the project root (this file is gitignored):
 
    ```
-   ANTHROPIC_API_KEY=sk-ant-...
+   TIP_API_KEY=<your-tip-api-key>
+   ARTIFACTORY_USERNAME=<your-username>
+   ARTIFACTORY_TOKEN=<your-artifactory-token>
    WEBHOOK_URL=http://<teammate-service>/fault-event
    ```
 
@@ -450,18 +452,28 @@ echo "Fault state cleared."
 ```dockerfile
 FROM python:3.12-slim
 
+# Artifactory credentials are passed as build args so they never land in a layer
+ARG ARTIFACTORY_USERNAME
+ARG ARTIFACTORY_TOKEN
+
 WORKDIR /app
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir \
+    --index-url "https://${ARTIFACTORY_USERNAME}:${ARTIFACTORY_TOKEN}@artifactory.marriott.com/artifactory/api/pypi/emergingtech-pypi-local/simple/" \
+    --extra-index-url https://pypi.org/simple/ \
+    -r requirements.txt
 COPY agent.py .
 EXPOSE 8080
 CMD ["python", "agent.py"]
 ```
 
+The `ARTIFACTORY_USERNAME` and `ARTIFACTORY_TOKEN` build args are passed via the `agent` service
+`build.args` block in `docker-compose.yml` (loaded from `.env` at build time).
+
 ### File: `agent/requirements.txt`
 
 ```
-anthropic>=0.28
+tip-sdk
 docker>=7.0
 flask>=3.0
 requests>=2.31
@@ -471,10 +483,42 @@ requests>=2.31
 
 The agent runs two concurrent threads:
 1. **Poll loop** — every 10 seconds, checks client HTTP success rate over the last 30s
-2. **FastAPI/Flask health endpoint** — `GET /health` for Uptime Kuma
+2. **Flask health endpoint** — `GET /health` for Uptime Kuma
 
 On detecting failures (≥3 consecutive `HTTP 000` or non-200 responses from client logs), the
-agent enters a `tool_use` loop with a maximum of 8 turns.
+agent enters a tool-calling loop with a maximum of 8 turns.
+
+**LLM client** — uses the TIP.ai SDK (Marriott's internal LLM provisioner, backed by LiteLLM):
+
+```python
+from tip_sdk import TipClient
+
+client = TipClient()  # reads TIP_API_KEY from environment
+response = client.chat.completions.create(
+    model="anthropic.claude-sonnet-4-20250514-v1:0",
+    messages=messages,
+    tools=tool_definitions,  # OpenAI-compatible tool schema
+)
+```
+
+The interface is OpenAI-compatible — tools are defined as JSON schema objects and
+tool calls come back in `response.choices[0].message.tool_calls`.
+
+**LLM client** — uses the TIP.ai SDK (Marriott's internal LLM provisioner, backed by LiteLLM):
+
+```python
+from tip_sdk import TipClient
+
+client = TipClient()  # reads TIP_API_KEY from environment
+response = client.chat.completions.create(
+    model="anthropic.claude-sonnet-4-20250514-v1:0",
+    messages=messages,
+    tools=tool_definitions,  # OpenAI-compatible tool schema
+)
+```
+
+The interface is OpenAI-compatible — tools are defined as JSON schema objects and
+tool calls come back in `response.choices[0].message.tool_calls`.
 
 **Tools exposed to the LLM:**
 
@@ -633,7 +677,7 @@ NetConcierge/
 
 ## Key Constraints & Reminders
 
-- **`ANTHROPIC_API_KEY`** must never be committed to git. The `.env` file must be in `.gitignore`.
+- **`TIP_API_KEY`, `ARTIFACTORY_USERNAME`, and `ARTIFACTORY_TOKEN`** must never be committed to git. The `.env` file must be in `.gitignore`. Retrieve all three from gopass before building.
 - **Docker socket mount** on the agent container is a privileged operation. It is acceptable for a
   demo but would never be done in production. Flag this when presenting.
 - **`NET_ADMIN` capability** is scoped only to the `router` container.

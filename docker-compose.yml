@@ -73,7 +73,11 @@ services:
       - TARGET_URL=http://172.20.0.254/
 
   agent:
-    build: ./agent
+    build:
+      context: ./agent
+      args:
+        ARTIFACTORY_USERNAME: ${ARTIFACTORY_USERNAME}
+        ARTIFACTORY_TOKEN: ${ARTIFACTORY_TOKEN}
     container_name: agent
     networks:
       - front-net
