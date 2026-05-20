@@ -58,7 +58,7 @@ def _container_exec(container_name: str, cmd: list) -> str:
     """Run a command inside a named container via the Docker socket."""
     try:
         container = _docker.containers.get(container_name)
-        exit_code, output = container.exec_run(cmd, demux=False)
+        _exit_code, output = container.exec_run(cmd, demux=False)
         decoded = output.decode("utf-8", errors="replace").strip() if output else ""
         return decoded or "(no output)"
     except Exception as exc:
