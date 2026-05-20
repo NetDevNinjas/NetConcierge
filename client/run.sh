@@ -4,8 +4,14 @@ INTERVAL="${INTERVAL:-3}"
 
 while true; do
     timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-    http_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "$TARGET_URL" || echo "000")
-    latency=$(curl -s -o /dev/null -w "%{time_total}" --max-time 5 "$TARGET_URL" 2>/dev/null || echo "timeout")
+
+    ## Single curl call captures both values; exits non-zero on timeout/failure
+    ## but the -w format string is always written, so no fallback echo needed.
+    result=$(curl -s -o /dev/null -w "%{http_code} %{time_total}" \
+        --max-time 5 "$TARGET_URL" 2>/dev/null) || result="000 timeout"
+
+    http_code=$(echo "$result" | awk '{print $1}')
+    latency=$(echo "$result"  | awk '{print $2}')
 
     if [[ "$http_code" == "200" ]]; then
         echo "[${timestamp}] OK  | HTTP ${http_code} | ${latency}s"
