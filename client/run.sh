@@ -6,9 +6,10 @@ while true; do
     timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
     ## Single curl call captures both values; exits non-zero on timeout/failure
-    ## but the -w format string is always written, so no fallback echo needed.
+    ## but the -w format string is always written regardless of exit code.
+    ## || true prevents set -e from killing the loop on connection failures.
     result=$(curl -s -o /dev/null -w "%{http_code} %{time_total}" \
-        --max-time 5 "$TARGET_URL" 2>/dev/null) || result="000 timeout"
+        --max-time 5 "$TARGET_URL" 2>/dev/null) || true
 
     http_code=$(echo "$result" | awk '{print $1}')
     latency=$(echo "$result"  | awk '{print $2}')
