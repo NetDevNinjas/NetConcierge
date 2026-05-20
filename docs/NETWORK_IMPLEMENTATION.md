@@ -309,11 +309,11 @@ shell access. Implement the following endpoints:
 
 ### Phase 3 Tests
 
-- [ ] `curl http://localhost:5000/health` from the EC2 host returns `{"status": "ok"}`
-- [ ] `docker exec router iptables -L FORWARD -n` shows the expected ACCEPT rules
-- [ ] `docker exec router sysctl net.ipv4.ip_forward` returns `net.ipv4.ip_forward = 1`
-- [ ] `curl http://localhost:5000/state` returns JSON with both `path-a` and `path-b` entries
-- [ ] `docker exec client curl -s http://172.20.0.254/` returns the nginx welcome page (end-to-end path-a)
+- [x] `curl http://localhost:5000/health` from the EC2 host returns `{"status": "ok"}`
+- [x] `docker exec router iptables -L FORWARD -n` shows the expected ACCEPT rules
+- [x] `docker exec router sysctl net.ipv4.ip_forward` returns `net.ipv4.ip_forward = 1`
+- [x] `curl http://localhost:5000/state` returns JSON with both `path-a` and `path-b` entries
+- [x] `docker exec client curl -s http://172.20.0.254/` returns the nginx welcome page (end-to-end path-a)
 
 ---
 
@@ -353,9 +353,9 @@ done
 
 ### Phase 4 Tests
 
-- [ ] `docker logs client` shows a continuous stream of `OK | HTTP 200` lines
-- [ ] No `ERR` lines appear in the client log under normal (no-fault) conditions
-- [ ] `docker logs client --tail 10` updates every ~3 seconds
+- [x] `docker logs client` shows a continuous stream of `OK | HTTP 200` lines
+- [x] No `ERR` lines appear in the client log under normal (no-fault) conditions
+- [x] `docker logs client --tail 10` updates every ~3 seconds
 
 ---
 
