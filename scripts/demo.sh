@@ -45,8 +45,8 @@ divider() { echo -e "${CYAN}$(printf '─%.0s' $(seq 1 68))${RESET}"; }
 
 pause() {
     echo
-    echo -e "${BOLD}  ⏳  Continuing in 20 seconds...${RESET}"
-    sleep 20
+    echo -e "${BOLD}  ⏳  Continuing in 10 seconds...${RESET}"
+    sleep 10
 }
 
 agent_status() {
@@ -123,7 +123,7 @@ pause
 # ══════════════════════════════════════════════════════════════════════════════
 # SCENARIO 1 — Single path failure, auto-resolved
 # ══════════════════════════════════════════════════════════════════════════════
-header "Scenario 1 / 3 — Path Failure: Auto-Resolved"
+header "Scenario 1 / 4 — Path Failure: Auto-Resolved"
 cat <<'EOF'
   Story
   ─────
@@ -164,7 +164,7 @@ pause
 # ══════════════════════════════════════════════════════════════════════════════
 # SCENARIO 2 — Complete outage, escalated + tier-2 LLM perks
 # ══════════════════════════════════════════════════════════════════════════════
-header "Scenario 2 / 3 — Complete Outage: Escalated"
+header "Scenario 2 / 4 — Complete Outage: Escalated"
 cat <<'EOF'
   Story
   ─────
@@ -206,7 +206,7 @@ pause
 # ══════════════════════════════════════════════════════════════════════════════
 # SCENARIO 3 — Guest self-reports, agent detects independently
 # ══════════════════════════════════════════════════════════════════════════════
-header "Scenario 3 / 3 — Guest Initiates: /guest-report"
+header "Scenario 3 / 4 — Guest Initiates: /guest-report"
 cat <<'EOF'
   Story
   ─────
