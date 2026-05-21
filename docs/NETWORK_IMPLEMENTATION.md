@@ -642,15 +642,80 @@ response = _llm.chat.completions.create(
 
 ### Phase 6 Tests
 
-- [ ] `docker logs agent` shows `Agent polling...` lines every 10s under normal conditions
-- [ ] `curl http://localhost:8080/health` returns `{"status": "ok"}`
-- [ ] Inject a blackhole on path-a: within 30s, agent logs show fault detection and tool loop start
+- [ ] `docker logs agent` shows `Agent polling started` at startup
+- [ ] `curl http://localhost:8080/health` returns `{"status": "ok", "busy": false}`
+- [ ] `curl http://localhost:8080/status` returns `{"status": "idle", ...}`
+- [ ] Inject a blackhole on path-a: within 10s, agent logs show fault detection and tool loop start
 - [ ] Agent calls `get_router_state` (visible in logs) before attempting a fix
 - [ ] Agent calls `switch_active_path` or `clear_faults` and client recovers
 - [ ] `docker logs client` returns to `OK` lines after agent resolves the fault
-- [ ] Webhook POST is sent with `status: resolved` and visible in teammate's service logs
-- [ ] Inject dual-path blackhole: agent exhausts 8 turns and sends `status: escalated` webhook
-- [ ] Escalation payload contains full `history` array with all tool calls
+- [ ] Agent calls `clear` (not `escalate`) on successful resolution — logs show `Signal cleared`
+- [ ] `POST /fault-event` with `status=resolved` is visible in perk-agent logs
+- [ ] Inject dual-path blackhole: agent exhausts 8 turns and calls `escalate` — logs show `Escalating to human operator`
+- [ ] Escalation payload contains full `history` array and `"tier": 2`
+
+---
+
+## Phase 6.5 — Perk Agent
+
+### File: `perk_agent/perk_agent.py`
+
+Receives fault-event webhooks from the network agent and manages a two-tier compensation system.
+Also accepts guest self-reports and monitors stale faults via a background polling thread.
+
+**Environment variables:**
+
+| Variable               | Default                              | Purpose                                         |
+|------------------------|--------------------------------------|-------------------------------------------------|
+| `TIP_API_KEY`          | —                                    | LLM gateway key for tier-2 recommendations      |
+| `LLM_BASE_URL`         | _(LiteLLM gateway URL)_              | LLM endpoint                                    |
+| `LLM_MODEL`            | `nova-pro`                           | Model for tier-2 perk recommendations           |
+| `AGENT_URL`            | `http://agent:8080`                  | Network agent base URL for status polling       |
+| `FRONTEND_URL`         | _(empty)_                            | Frontend event stream; skipped if empty         |
+| `UPDATE_TIMEOUT_SECS`  | `900`                                | Seconds of silence before background poll fires |
+| `CUSTOMER_PROFILE_PATH`| `/app/customer_profile.txt`          | Guest profile fed to tier-2 LLM                 |
+
+**Flask endpoints:**
+
+| Method | Endpoint        | Purpose                                                               |
+|--------|-----------------|-----------------------------------------------------------------------|
+| GET    | `/health`       | `{"status": "ok", "service": "perk-agent"}`                          |
+| GET    | `/status`       | `{"service": "perk-agent", "active_faults": {<room>: {...}}}`         |
+| POST   | `/fault-event`  | Main webhook — handles detected / resolved / escalated events         |
+| POST   | `/fault-update` | Progress ping from agent each tool turn — resets stale timer          |
+| POST   | `/guest-report` | Guest-initiated report — queries agent `/status` and logs context     |
+
+**`POST /fault-event` behaviour by `status`:**
+
+| `status`    | `tier` | Action                                                                      |
+|-------------|--------|-----------------------------------------------------------------------------|
+| `detected`  | 1      | Open fault tracking; issue fixed tier-1 perks (WiFi refund + bar item)     |
+| `resolved`  | 1      | Close fault tracking; log resolution; no additional perks                  |
+| `escalated` | 2      | Close fault tracking; call LLM for elevated tier-2 compensation             |
+
+**Tier 1 perks (fixed, no LLM):**
+- Full WiFi bill refund for today
+- One complimentary drink or appetizer at the lobby bar
+
+**Tier 2 perks (LLM-recommended, based on customer profile):** escalation only. The LLM receives
+the customer loyalty profile and fault context and recommends from a menu including: complimentary
+dinner, spa credit, room upgrade, loyalty points bonus, bill discount, or future stay credit.
+
+**Background polling thread:** starts at startup as a daemon thread. Every 60 seconds it scans
+`_active_faults` for rooms whose `last_update` timestamp is older than `UPDATE_TIMEOUT_SECS`
+(15 minutes). For stale faults it polls `GET agent:8080/status` to check whether the agent has
+finished but the webhook was missed.
+
+### Phase 6.5 Tests
+
+- [ ] `curl http://localhost:8081/health` returns `{"status": "ok", "service": "perk-agent"}`
+- [ ] `curl http://localhost:8081/status` returns `{"service": "perk-agent", "active_faults": {}}`
+- [ ] Inject path-a blackhole; agent detects it: perk-agent logs show `TIER 1 PERKS` block with WiFi refund + bar item
+- [ ] After agent resolves fault: perk-agent logs show `status=resolved` and no tier-2 block
+- [ ] Inject dual-path blackhole; agent escalates: perk-agent logs show `TIER 2 PERKS` block with LLM recommendation JSON
+- [ ] `POST http://localhost:8081/guest-report` with `{"room": "412", "message": "WiFi down"}` returns `{"status": "received", ...}` and perk-agent logs show `GUEST REPORT` + agent status query
+- [ ] `curl http://localhost:8081/status` while a fault is active shows the room in `active_faults`
+- [ ] `docker logs perk-agent` shows `fault-update` acknowledgements during agent tool turns
 
 ---
 

@@ -491,7 +491,10 @@ def _run_agent_loop(trigger_lines: list[str]) -> None:
     global ROOM_NUMBER
     ROOM_NUMBER = random.choice(ROOM_POOL)
     log.info("Agent loop started — assigned room %s", ROOM_NUMBER)
-    _emit_event("fault_detected", f"⚠️ Network fault detected in Room {ROOM_NUMBER} — starting diagnosis loop")
+    _emit_event(
+        "fault_detected",
+        f"⚠️ Network fault detected in Room {ROOM_NUMBER} — starting diagnosis loop",
+    )
 
     # ── Tier 1: Immediate perks (WiFi refund + bar item) ───────────────────
     _notify_perk_agent(tier=1, fault_type="detected", summary="Network fault detected")
