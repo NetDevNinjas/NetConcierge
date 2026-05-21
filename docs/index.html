@@ -64,26 +64,6 @@ title: Documentation
     color: var(--text-muted);
   }
 
-  .breadcrumb {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-family: var(--font-mono);
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    padding: 1rem 2rem;
-    max-width: 960px;
-    margin: 0 auto;
-    flex-wrap: wrap;
-  }
-
-  .breadcrumb a {
-    color: var(--brand);
-    text-decoration: none;
-  }
-  .breadcrumb a:hover { text-decoration: underline; }
-  .breadcrumb span { color: var(--text-faint); }
-
   .search-bar {
     padding: 1rem 2rem 0;
     max-width: 960px;
@@ -104,13 +84,8 @@ title: Documentation
     transition: border-color 0.15s;
   }
 
-  .search-bar input:focus {
-    border-color: var(--brand);
-  }
-
-  .search-bar input::placeholder {
-    color: var(--text-faint);
-  }
+  .search-bar input:focus { border-color: var(--brand); }
+  .search-bar input::placeholder { color: var(--text-faint); }
 
   .section {
     max-width: 960px;
@@ -157,6 +132,7 @@ title: Documentation
     transition: border-color 0.15s, background 0.15s, transform 0.1s;
     position: relative;
     overflow: hidden;
+    cursor: pointer;
   }
 
   .card::before {
@@ -169,31 +145,13 @@ title: Documentation
     transition: opacity 0.15s;
   }
 
-  .card:hover {
-    border-color: var(--border-hover);
-    background: var(--bg-secondary);
-    transform: translateY(-1px);
-  }
-
+  .card:hover { border-color: var(--border-hover); background: var(--bg-secondary); transform: translateY(-1px); }
   .card:hover::before { opacity: 1; }
 
-  .card.folder {
-    background: var(--brand-light);
-    border-color: rgba(29, 158, 117, 0.2);
-  }
+  .card.folder { background: var(--brand-light); border-color: rgba(29, 158, 117, 0.2); }
+  .card.folder:hover { background: var(--brand-light); border-color: var(--brand); }
 
-  .card.folder:hover {
-    background: var(--brand-light);
-    border-color: var(--brand);
-  }
-
-  .card-icon {
-    font-size: 1.1rem;
-    line-height: 1;
-  }
-
-  .card-icon.doc { color: var(--brand); }
-  .card-icon.folder-icon { color: var(--brand-dark); }
+  .card-icon { font-size: 1.1rem; line-height: 1; }
 
   .card-name {
     font-family: var(--font-mono);
@@ -206,41 +164,25 @@ title: Documentation
 
   .card.folder .card-name { color: var(--brand-dark); }
 
-  @media (prefers-color-scheme: dark) {
-    .card.folder .card-name { color: var(--brand-dark); }
-    .card-icon.folder-icon { color: var(--brand-dark); }
-  }
+  .card-meta { font-size: 0.75rem; color: var(--text-faint); font-family: var(--font-mono); margin-top: auto; }
+  .card-description { font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; }
 
-  .card-meta {
-    font-size: 0.75rem;
-    color: var(--text-faint);
-    font-family: var(--font-mono);
-    margin-top: auto;
-  }
+  .back-link { color: var(--brand); text-decoration: none; font-size: 0.7rem; }
+  .back-link:hover { text-decoration: underline; }
 
-  .card-description {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    line-height: 1.4;
-  }
-
-  .empty-state {
-    padding: 2rem;
-    text-align: center;
-    color: var(--text-faint);
-    font-size: 0.875rem;
-    font-family: var(--font-mono);
-  }
-
+  .empty-state { padding: 2rem; text-align: center; color: var(--text-faint); font-size: 0.875rem; font-family: var(--font-mono); }
   .hidden { display: none !important; }
 </style>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 
+{% assign all_docs = site.pages | where_exp: "p", "p.path contains 'docs/'" %}
+{% assign all_docs = all_docs | where_exp: "p", "p.name != 'index.html' and p.name != 'index.md'" %}
+
 <div class="docs-header">
   <h1>~/docs</h1>
-  <p>{{ site.pages | where_exp: "p", "p.path contains 'docs/'" | size }} documents indexed</p>
+  <p>{{ all_docs | size }} documents indexed</p>
 </div>
 
 <div class="search-bar">
@@ -249,102 +191,82 @@ title: Documentation
 
 <div id="browser">
 
-{% comment %} Collect all docs pages, excluding index files {% endcomment %}
-{% assign all_docs = site.pages | where_exp: "p", "p.path contains 'docs/'" %}
-{% assign all_docs = all_docs | where_exp: "p", "p.name != 'index.html' and p.name != 'index.md'" %}
-
-{% comment %} Build unique directory list {% endcomment %}
-{% assign dirs_seen = "" %}
-
-{% for page in all_docs %}
-  {% assign parts = page.path | split: "/" %}
+{% assign unique_subdirs = "" | split: "|" %}
+{% for p in all_docs %}
+  {% assign parts = p.path | split: "/" %}
   {% if parts.size > 2 %}
-    {% assign dir = parts | slice: 0, parts.size | join: "/" %}
-    {% assign parent = parts | slice: 0, parts.size | minus: 1 | join: "/" %}
-    {% unless dirs_seen contains parent %}
-      {% assign dirs_seen = dirs_seen | append: parent | append: "|" %}
+    {% assign subdir = parts[1] %}
+    {% assign already = false %}
+    {% for d in unique_subdirs %}
+      {% if d == subdir %}
+        {% assign already = true %}
+      {% endif %}
+    {% endfor %}
+    {% unless already %}
+      {% assign unique_subdirs = unique_subdirs | push: subdir %}
     {% endunless %}
   {% endif %}
 {% endfor %}
 
-{% comment %} Group pages by immediate parent directory {% endcomment %}
-{% assign top_level_pages = "" | split: "" %}
-{% assign subdirs = "" | split: "" %}
-
-{% for page in all_docs %}
-  {% assign parts = page.path | split: "/" %}
+{% assign root_pages = "" | split: "|" %}
+{% for p in all_docs %}
+  {% assign parts = p.path | split: "/" %}
   {% if parts.size == 2 %}
-    {% assign top_level_pages = top_level_pages | push: page %}
-  {% endif %}
-{% endfor %}
-
-{% assign unique_subdirs = "" | split: "" %}
-{% for page in all_docs %}
-  {% assign parts = page.path | split: "/" %}
-  {% if parts.size > 2 %}
-    {% assign dir_name = parts[1] %}
-    {% unless unique_subdirs contains dir_name %}
-      {% assign unique_subdirs = unique_subdirs | push: dir_name %}
-    {% endunless %}
+    {% assign root_pages = root_pages | push: p %}
   {% endif %}
 {% endfor %}
 
 {% if unique_subdirs.size > 0 %}
-<div class="section">
+<div class="section" id="folders-section">
   <div class="section-label">folders</div>
   <div class="card-grid" id="folders-grid">
-    {% for dir in unique_subdirs | sort %}
+    {% assign unique_subdirs_sorted = unique_subdirs | sort %}
+    {% for dir in unique_subdirs_sorted %}
       {% assign dir_pages = all_docs | where_exp: "p", "p.path contains dir" %}
-      <a class="card folder" href="#dir-{{ dir | slugify }}" data-name="{{ dir }}" onclick="toggleDir('{{ dir | slugify }}')">
-        <div class="card-icon folder-icon">📁</div>
+      <div class="card folder" data-name="{{ dir }}" onclick="openDir('{{ dir | slugify }}')">
+        <div class="card-icon">📁</div>
         <div class="card-name">{{ dir }}/</div>
         <div class="card-meta">{{ dir_pages | size }} files</div>
-      </a>
+      </div>
     {% endfor %}
   </div>
 </div>
 {% endif %}
 
-{% if top_level_pages.size > 0 %}
-<div class="section">
+{% if root_pages.size > 0 %}
+<div class="section" id="root-section">
   <div class="section-label">root files</div>
-  <div class="card-grid" id="root-grid">
-    {% for page in top_level_pages | sort: "title" %}
-      <a class="card" href="{{ page.url | relative_url }}" data-name="{{ page.title | default: page.name }}">
-        <div class="card-icon doc">📄</div>
-        <div class="card-name">{{ page.title | default: page.name }}</div>
-        {% if page.description %}
-          <div class="card-description">{{ page.description | truncate: 80 }}</div>
-        {% endif %}
-        {% if page.date %}
-          <div class="card-meta">{{ page.date | date: "%Y-%m-%d" }}</div>
-        {% endif %}
+  <div class="card-grid">
+    {% assign root_sorted = root_pages | sort: "title" %}
+    {% for p in root_sorted %}
+      <a class="card" href="{{ p.url | relative_url }}" data-name="{{ p.title | default: p.name }}">
+        <div class="card-icon">📄</div>
+        <div class="card-name">{{ p.title | default: p.name }}</div>
+        {% if p.description %}<div class="card-description">{{ p.description | truncate: 80 }}</div>{% endif %}
+        {% if p.date %}<div class="card-meta">{{ p.date | date: "%Y-%m-%d" }}</div>{% endif %}
       </a>
     {% endfor %}
   </div>
 </div>
 {% endif %}
 
-{% for dir in unique_subdirs | sort %}
+{% assign unique_subdirs_sorted = unique_subdirs | sort %}
+{% for dir in unique_subdirs_sorted %}
   {% assign dir_pages = all_docs | where_exp: "p", "p.path contains dir" %}
   {% assign dir_pages_sorted = dir_pages | sort: "title" %}
-  <div class="section dir-section" id="dir-{{ dir | slugify }}" style="display:none;">
+  <div class="section dir-section hidden" id="dir-{{ dir | slugify }}">
     <div class="section-label">
-      <a href="#" onclick="hideDir('{{ dir | slugify }}'); return false;" style="color: var(--brand); text-decoration: none; font-size: 0.7rem;">← back</a>
+      <a class="back-link" href="#" onclick="closeDir('{{ dir | slugify }}'); return false;">← back</a>
       &nbsp;/&nbsp;{{ dir }}
     </div>
     <div class="card-grid">
-      {% for page in dir_pages_sorted %}
-        {% assign parts = page.path | split: "/" %}
-        <a class="card" href="{{ page.url | relative_url }}" data-name="{{ page.title | default: page.name }}">
-          <div class="card-icon doc">📄</div>
-          <div class="card-name">{{ page.title | default: parts.last }}</div>
-          {% if page.description %}
-            <div class="card-description">{{ page.description | truncate: 80 }}</div>
-          {% endif %}
-          {% if page.date %}
-            <div class="card-meta">{{ page.date | date: "%Y-%m-%d" }}</div>
-          {% endif %}
+      {% for p in dir_pages_sorted %}
+        {% assign parts = p.path | split: "/" %}
+        <a class="card" href="{{ p.url | relative_url }}" data-name="{{ p.title | default: p.name }}">
+          <div class="card-icon">📄</div>
+          <div class="card-name">{{ p.title | default: parts.last }}</div>
+          {% if p.description %}<div class="card-description">{{ p.description | truncate: 80 }}</div>{% endif %}
+          {% if p.date %}<div class="card-meta">{{ p.date | date: "%Y-%m-%d" }}</div>{% endif %}
         </a>
       {% endfor %}
     </div>
@@ -356,48 +278,49 @@ title: Documentation
 <div class="empty-state hidden" id="no-results">no matching files found</div>
 
 <script>
-  function toggleDir(slug) {
-    event.preventDefault();
-    document.querySelectorAll('.dir-section').forEach(s => s.style.display = 'none');
-    document.getElementById('dir-' + slug).style.display = 'block';
-    document.getElementById('folders-grid') && (document.getElementById('folders-grid').closest('.section').style.display = 'none');
-    document.getElementById('root-grid') && (document.getElementById('root-grid').closest('.section').style.display = 'none');
+  function openDir(slug) {
+    document.getElementById('folders-section') && (document.getElementById('folders-section').classList.add('hidden'));
+    document.getElementById('root-section') && (document.getElementById('root-section').classList.add('hidden'));
+    document.querySelectorAll('.dir-section').forEach(function(s) { s.classList.add('hidden'); });
+    var el = document.getElementById('dir-' + slug);
+    if (el) el.classList.remove('hidden');
   }
 
-  function hideDir(slug) {
-    document.getElementById('dir-' + slug).style.display = 'none';
-    document.querySelectorAll('.dir-section').forEach(s => s.style.display = 'none');
-    document.getElementById('folders-grid') && (document.getElementById('folders-grid').closest('.section').style.display = '');
-    document.getElementById('root-grid') && (document.getElementById('root-grid').closest('.section').style.display = '');
+  function closeDir(slug) {
+    var el = document.getElementById('dir-' + slug);
+    if (el) el.classList.add('hidden');
+    document.getElementById('folders-section') && (document.getElementById('folders-section').classList.remove('hidden'));
+    document.getElementById('root-section') && (document.getElementById('root-section').classList.remove('hidden'));
   }
 
   document.getElementById('search').addEventListener('input', function() {
-    const q = this.value.toLowerCase().trim();
-    const cards = document.querySelectorAll('.card');
-    let visible = 0;
+    var q = this.value.toLowerCase().trim();
+    var cards = document.querySelectorAll('.card');
+    var visible = 0;
 
     if (q === '') {
-      cards.forEach(c => c.classList.remove('hidden'));
-      document.querySelectorAll('.dir-section').forEach(s => s.style.display = 'none');
-      document.getElementById('folders-grid') && (document.getElementById('folders-grid').closest('.section').style.display = '');
-      document.getElementById('root-grid') && (document.getElementById('root-grid').closest('.section').style.display = '');
+      cards.forEach(function(c) { c.classList.remove('hidden'); });
+      document.querySelectorAll('.dir-section').forEach(function(s) { s.classList.add('hidden'); });
+      document.getElementById('folders-section') && document.getElementById('folders-section').classList.remove('hidden');
+      document.getElementById('root-section') && document.getElementById('root-section').classList.remove('hidden');
       document.getElementById('no-results').classList.add('hidden');
       return;
     }
 
-    document.querySelectorAll('.dir-section').forEach(s => s.style.display = 'block');
-    document.getElementById('folders-grid') && (document.getElementById('folders-grid').closest('.section').style.display = 'block');
+    document.querySelectorAll('.dir-section').forEach(function(s) { s.classList.remove('hidden'); });
+    document.getElementById('folders-section') && document.getElementById('folders-section').classList.add('hidden');
 
-    cards.forEach(c => {
-      const name = (c.dataset.name || '').toLowerCase();
-      const matches = name.includes(q);
+    cards.forEach(function(c) {
+      var name = (c.dataset.name || '').toLowerCase();
+      var matches = name.indexOf(q) !== -1;
       c.classList.toggle('hidden', !matches);
       if (matches) visible++;
     });
 
-    document.querySelectorAll('.section').forEach(s => {
-      const anyVisible = [...s.querySelectorAll('.card')].some(c => !c.classList.contains('hidden'));
-      s.style.display = anyVisible ? '' : 'none';
+    document.querySelectorAll('.section').forEach(function(s) {
+      var any = false;
+      s.querySelectorAll('.card').forEach(function(c) { if (!c.classList.contains('hidden')) any = true; });
+      s.classList.toggle('hidden', !any);
     });
 
     document.getElementById('no-results').classList.toggle('hidden', visible > 0);
