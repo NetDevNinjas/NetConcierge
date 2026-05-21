@@ -88,12 +88,12 @@ Given:
 
 Recommend ONE primary perk and optionally ONE secondary perk from this menu:
 - Complimentary dinner for two at the hotel restaurant (up to $150 value)
-- Spa credit ($50–$150 depending on guest tier and severity)
+- Spa credit ($50-$150 depending on guest tier and severity)
 - Complimentary room night (current stay extension or future stay)
 - Room upgrade for remainder of stay
-- Loyalty points bonus (1000–5000 points)
+- Loyalty points bonus (1000-5000 points)
 - Late checkout + early check-in on next visit
-- Percentage discount on current bill (10–25%)
+- Percentage discount on current bill (10-25%)
 
 Guidelines:
 - Higher loyalty tier → more generous perks
