@@ -298,12 +298,17 @@ def fault_event():
         }
         _emit_event("resolved", f"✅ Fault resolved for Room {room} — no additional perks needed")
     elif tier == 2:
-        _emit_event("tier2", f"🏆 Escalation received for Room {room} — generating elevated perks via LLM...")
+        _emit_event(
+            "tier2",
+            f"🏆 Escalation received for Room {room} — generating elevated perks via LLM...",
+        )
         ## Escalated and unresolved — close tracking and issue elevated LLM perks
         with _faults_lock:
             _active_faults.pop(room, None)
         result = _build_tier_2_response(data)
-        _emit_event("tier2", f"Tier 2 perks issued for Room {room}", data=result.get("recommendation"))
+        _emit_event(
+            "tier2", f"Tier 2 perks issued for Room {room}", data=result.get("recommendation")
+        )
     else:
         result = _build_tier_1_response(room)
         _emit_event(
