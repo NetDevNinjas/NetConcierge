@@ -180,8 +180,7 @@ def tool_clear_faults(path: str) -> str:
         return f"(router API error: {exc})"
 
 
-def tool_escalate(
-    status: str,
+def tool_clear(
     summary: str,
     history: list,
     fault_type: str = "unknown",
@@ -334,7 +333,7 @@ TOOL_DEFINITIONS = [
     {
         "type": "function",
         "function": {
-            "name": "escalate",
+            "name": "clear",
             "description": (
                 "Report the final outcome to the guest-facing system. "
                 "ALWAYS call this as your very last action. "
@@ -385,11 +384,12 @@ RECOMMENDED STRATEGY:
 4. If one path has high latency or is degraded, call switch_active_path to the healthy path.
 5. If both paths are degraded, call clear_faults with path set to both.
 6. As a last resort, call restart_container to reset a service.
-7. ALWAYS finish by calling escalate with status, summary, and fault_type.
+7. If you successfully restored service, call clear as your final action.
+   If you could NOT restore service after exhausting all options, call escalate instead.
 
 CONSTRAINTS:
-- Maximum 8 tool calls total, including escalate.
-- escalate MUST be your last action.
+- Maximum 8 tool calls total, including clear or escalate.
+- clear or escalate MUST be your last action.
 - Do not repeat the same tool call with identical arguments.
 - The guest-facing gateway address is the router on the front network. Use it for curl_endpoint tests.
 """
@@ -520,10 +520,8 @@ def _run_agent_loop(trigger_lines: list[str]) -> None:
                 result = tool_clear_faults(args.get("path", "both"))
             elif name == "restart_container":
                 result = tool_restart_container(args.get("name", ""))
-            elif name == "escalate":
-                # Inject our tracked history so the webhook always has the full record
-                result = tool_escalate(
-                    status=args.get("status", "escalated"),
+            elif name == "clear":
+                result = tool_clear(
                     summary=args.get("summary", ""),
                     history=history,
                     fault_type=args.get("fault_type", "unknown"),
@@ -537,13 +535,13 @@ def _run_agent_loop(trigger_lines: list[str]) -> None:
 
             log.info("Turn %d — result: %.300s", turn, result)
             _emit_event(
-                "escalation" if name == "escalate" else "tool_result",
+                "escalation" if name in ("escalate", "clear") else "tool_result",
                 f"Turn {turn} result: {str(result)[:300]}",
                 {"tool": name, "turn": turn},
             )
             history.append({"turn": turn, "tool": name, "input": args, "result": result})
             _agent_state.update({"current_turn": turn, "last_tool": name})
-            if name != "escalate":
+            if name not in ("escalate", "clear"):
                 with contextlib.suppress(Exception):
                     requests.post(
                         f"{PERK_AGENT_URL}/fault-update",
