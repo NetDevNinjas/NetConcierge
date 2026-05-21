@@ -16,6 +16,7 @@ import contextlib
 import json
 import logging
 import os
+import random
 import threading
 import time
 from datetime import UTC, datetime
@@ -28,7 +29,7 @@ from openai import OpenAI
 # ── Configuration ──────────────────────────────────────────────────────────────
 LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "https://litellm-api.up.railway.app/v1")
 LLM_MODEL = os.environ.get("LLM_MODEL", "claude-3-5-haiku-20241022")
-CUSTOMER_PROFILE_PATH = os.environ.get("CUSTOMER_PROFILE_PATH", "/app/customer_profile.txt")
+PROFILES_DIR = os.environ.get("PROFILES_DIR", "/app/profiles")
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "")
 # FORWARD_URL = os.environ.get("FORWARD_URL", "http://localhost:9000/recommendations")
 AGENT_URL = os.environ.get("AGENT_URL", "http://agent:8080")
@@ -54,27 +55,86 @@ _llm = OpenAI(
 _active_faults: dict = {}
 _faults_lock = threading.Lock()
 
-# ── Tier 1: Fixed perks (no LLM needed) ───────────────────────────────────────
-TIER_1_PERKS = {
-    "tier": 1,
-    "perks": [
-        {
-            "type": "wifi_refund",
-            "value": "Full WiFi bill refund for today",
-            "description": "Guest's WiFi charges for the current day are fully refunded.",
-        },
-        {
-            "type": "complimentary_bar_item",
-            "value": "Free drink or appetizer at the hotel bar",
-            "description": "Guest may redeem one complimentary drink or appetizer at the lobby bar.",
-        },
-    ],
-    "apology_note": (
-        "We sincerely apologize for the WiFi disruption. We've refunded today's "
-        "WiFi charges and would love to offer you a complimentary drink or appetizer "
-        "at our lobby bar while our team works to restore full service."
-    ),
-}
+# ── Tier 1: Randomized perks pool (no LLM needed) ─────────────────────────────
+TIER_1_PERK_POOL = [
+    {
+        "type": "wifi_refund",
+        "value": "Full WiFi bill refund for today",
+        "description": "Guest's WiFi charges for the current day are fully refunded.",
+    },
+    {
+        "type": "complimentary_cocktail",
+        "value": "Complimentary signature cocktail at the rooftop bar",
+        "description": "Guest may enjoy one handcrafted cocktail from our rooftop lounge menu.",
+    },
+    {
+        "type": "free_appetizer",
+        "value": "Complimentary appetizer at any hotel restaurant",
+        "description": "Guest may select any starter from the dinner menu, on the house.",
+    },
+    {
+        "type": "spa_express",
+        "value": "Complimentary 15-minute express massage",
+        "description": "A relaxing neck & shoulder massage at the hotel spa — no appointment needed.",
+    },
+    {
+        "type": "room_service_credit",
+        "value": "$25 room service credit",
+        "description": "A $25 credit applied toward any room service order during the stay.",
+    },
+    {
+        "type": "late_checkout",
+        "value": "Complimentary 2-hour late checkout",
+        "description": "Guest may check out up to 2 hours past standard time at no charge.",
+    },
+    {
+        "type": "breakfast_voucher",
+        "value": "Complimentary breakfast for two",
+        "description": "Full breakfast buffet for two at the hotel restaurant, next morning.",
+    },
+    {
+        "type": "minibar_credit",
+        "value": "Complimentary minibar items (up to $20)",
+        "description": "Guest may enjoy up to $20 worth of minibar snacks and beverages.",
+    },
+    {
+        "type": "pool_cabana",
+        "value": "Complimentary poolside cabana for 2 hours",
+        "description": "Reserved cabana at the pool deck with refreshments included.",
+    },
+    {
+        "type": "dessert_platter",
+        "value": "Complimentary dessert platter delivered to room",
+        "description": "A curated selection of pastries and chocolates from our pastry chef.",
+    },
+]
+
+TIER_1_APOLOGY_TEMPLATES = [
+    "We sincerely apologize for the WiFi disruption. We've {perk1} and {perk2} while our team works to restore full service.",
+    "We're sorry for the inconvenience with your internet connection. As a gesture of goodwill, we'd like to offer you {perk1} and {perk2}.",
+    "Please accept our apologies for the connectivity issue. We've arranged {perk1} and {perk2} for you.",
+]
+
+
+def _build_tier_1_response(room: str) -> dict:
+    """Return a randomized Tier 1 perk package (always includes WiFi refund + one random perk)."""
+    # Always include WiFi refund as first perk
+    wifi_refund = TIER_1_PERK_POOL[0]
+    # Pick one additional random perk (excluding WiFi refund)
+    bonus_perk = random.choice(TIER_1_PERK_POOL[1:])
+
+    perks = [wifi_refund, bonus_perk]
+    apology = random.choice(TIER_1_APOLOGY_TEMPLATES).format(
+        perk1=wifi_refund["value"].lower(),
+        perk2=bonus_perk["value"].lower(),
+    )
+
+    return {
+        "tier": 1,
+        "room": room,
+        "perks": perks,
+        "apology_note": apology,
+    }
 
 # ── Tier 2: LLM-recommended perks for unresolved escalations ──────────────────
 TIER_2_SYSTEM_PROMPT = """\
@@ -103,7 +163,7 @@ Guidelines:
 - Longer disruptions (more turns_used) → more generous
 - Business travelers who needed WiFi for work → prioritize meaningful compensation
 - Consider the guest's booking value and lifetime spend
-- These perks stack ON TOP of Tier 1 (WiFi refund + bar item already given)
+- These perks stack ON TOP of Tier 1 (WiFi refund + one bonus perk already given)
 
 Respond with a JSON object:
 {
@@ -130,26 +190,26 @@ def _emit_event(event_type: str, message: str, data: dict | None = None) -> None
         requests.post(FRONTEND_URL, json=payload, timeout=3)
 
 
-def _load_customer_profile() -> str:
-    """Load the customer profile text file."""
+def _load_customer_profile(room: str = "412") -> str:
+    """Load the customer profile for a given room number."""
+    profile_path = Path(PROFILES_DIR) / f"room_{room}.txt"
     try:
-        return Path(CUSTOMER_PROFILE_PATH).read_text(encoding="utf-8")
+        return profile_path.read_text(encoding="utf-8")
     except FileNotFoundError:
-        log.warning("Customer profile not found at %s", CUSTOMER_PROFILE_PATH)
+        # Fallback: try any available profile
+        profiles_dir = Path(PROFILES_DIR)
+        if profiles_dir.exists():
+            available = list(profiles_dir.glob("room_*.txt"))
+            if available:
+                return random.choice(available).read_text(encoding="utf-8")
+        log.warning("No customer profile found for room %s", room)
         return "(no customer profile available)"
-
-
-def _build_tier_1_response(room: str) -> dict:
-    """Return the fixed Tier 1 perk package."""
-    return {
-        **TIER_1_PERKS,
-        "room": room,
-    }
 
 
 def _build_tier_2_response(fault_event: dict) -> dict:
     """Call the LLM to recommend Tier 2 perks for an unresolved escalation."""
-    customer_profile = _load_customer_profile()
+    room = fault_event.get("room", "412")
+    customer_profile = _load_customer_profile(room)
 
     user_message = (
         f"## Escalated Network Fault (Unresolved)\n"
@@ -161,7 +221,7 @@ def _build_tier_2_response(fault_event: dict) -> dict:
         f"- Timestamp: {fault_event.get('timestamp', 'unknown')}\n\n"
         f"## Customer Profile\n"
         f"{customer_profile}\n\n"
-        f"The guest already received Tier 1 perks (WiFi refund + bar item). "
+        f"The guest already received Tier 1 perks (WiFi refund + a bonus perk). "
         f"Please recommend additional higher-level compensation."
     )
 
@@ -296,6 +356,20 @@ def fault_event():
             "message": "Issue resolved — tier-1 perks already issued, no further action.",
         }
         _emit_event("resolved", f"✅ Fault resolved for Room {room} — no additional perks needed")
+    elif status == "escalation-resolved":
+        ## Human operator resolved the escalated fault
+        with _faults_lock:
+            _active_faults.pop(room, None)
+        result = {
+            "tier": 2,
+            "status": "escalation-resolved",
+            "room": room,
+            "message": "Escalated issue has been resolved — tier-2 perks were already issued.",
+        }
+        _emit_event(
+            "resolved",
+            f"✅ Escalated fault resolved for Room {room} — issue fully closed",
+        )
     elif tier == 2:
         _emit_event(
             "tier2",

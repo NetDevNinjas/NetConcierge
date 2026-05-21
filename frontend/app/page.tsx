@@ -127,6 +127,15 @@ export default function Home() {
             }}
           />
           {connected ? "Live" : "Disconnected"}
+          <button
+            onClick={() => {
+              fetch("/api/events", { method: "DELETE" });
+              setEvents([]);
+            }}
+            style={styles.clearBtn}
+          >
+            Clear
+          </button>
         </div>
       </header>
 
@@ -216,6 +225,17 @@ const styles: Record<string, React.CSSProperties> = {
     height: "8px",
     borderRadius: "50%",
     display: "inline-block",
+  },
+  clearBtn: {
+    marginLeft: "0.75rem",
+    padding: "4px 10px",
+    fontSize: "0.7rem",
+    fontWeight: 500,
+    color: "#e6edf3",
+    background: "#30363d",
+    border: "1px solid #484f58",
+    borderRadius: "4px",
+    cursor: "pointer",
   },
   columns: {
     display: "flex",

@@ -6,6 +6,6 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY perk_agent.py .
-COPY customer_profile.txt .
+COPY profiles/ ./profiles/
 EXPOSE 8081
 CMD ["python", "perk_agent.py"]

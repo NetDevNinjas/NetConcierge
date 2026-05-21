@@ -10,6 +10,7 @@ import contextlib
 import json
 import logging
 import os
+import random
 import threading
 import time
 from datetime import UTC, datetime
@@ -27,6 +28,7 @@ LLM_MODEL = os.environ.get("LLM_MODEL", "claude-3-5-haiku-20241022")
 POLL_INTERVAL = int(os.environ.get("POLL_INTERVAL", "10"))
 FAULT_THRESHOLD = int(os.environ.get("FAULT_THRESHOLD", "3"))
 ROOM_NUMBER = os.environ.get("ROOM_NUMBER", "412")
+ROOM_POOL = ["412", "718", "305", "921", "1102"]
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "")
 MAX_TURNS = 8
 
@@ -486,8 +488,10 @@ def _notify_perk_agent(tier: int, **kwargs) -> None:
 
 
 def _run_agent_loop(trigger_lines: list[str]) -> None:
-    log.info("Agent loop started")
-    _emit_event("fault_detected", "⚠️ Network fault detected — starting diagnosis loop")
+    global ROOM_NUMBER
+    ROOM_NUMBER = random.choice(ROOM_POOL)
+    log.info("Agent loop started — assigned room %s", ROOM_NUMBER)
+    _emit_event("fault_detected", f"⚠️ Network fault detected in Room {ROOM_NUMBER} — starting diagnosis loop")
 
     # ── Tier 1: Immediate perks (WiFi refund + bar item) ───────────────────
     _notify_perk_agent(tier=1, fault_type="detected", summary="Network fault detected")
@@ -635,6 +639,28 @@ def _run_agent_loop(trigger_lines: list[str]) -> None:
         "resolved" if escalated else "info",
         f"Agent loop complete — {turn} turn(s) used",
     )
+
+    # After escalation, wait 10s then send escalation-resolved to close the loop
+    def _send_escalation_resolved() -> None:
+        time.sleep(10)
+        payload = {
+            "status": "escalation-resolved",
+            "tier": 2,
+            "room": ROOM_NUMBER,
+            "summary": "Escalated issue resolved by operator.",
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+        try:
+            requests.post(WEBHOOK_URL, json=payload, timeout=10)
+            log.info("Escalation-resolved sent for room %s", ROOM_NUMBER)
+        except Exception as exc:
+            log.warning("Escalation-resolved notification failed: %s", exc)
+        _emit_event("resolved", "✅ Escalation resolved — issue fully closed")
+
+    if escalated:
+        threading.Thread(
+            target=_send_escalation_resolved, daemon=True, name="escalation-resolved"
+        ).start()
 
 
 # ── Poll loop ──────────────────────────────────────────────────────────────────
