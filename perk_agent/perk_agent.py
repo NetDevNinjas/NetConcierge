@@ -15,6 +15,9 @@ perks based on a tiered approach:
 import json
 import logging
 import os
+import threading
+import time
+from datetime import UTC, datetime
 from pathlib import Path
 
 import requests
@@ -27,6 +30,9 @@ LLM_MODEL = os.environ.get("LLM_MODEL", "claude-3-5-haiku-20241022")
 CUSTOMER_PROFILE_PATH = os.environ.get("CUSTOMER_PROFILE_PATH", "/app/customer_profile.txt")
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "")
 # FORWARD_URL = os.environ.get("FORWARD_URL", "http://localhost:9000/recommendations")
+AGENT_URL = os.environ.get("AGENT_URL", "http://agent:8080")
+## If no update from the network agent within this many seconds, poll it for status
+UPDATE_TIMEOUT_SECS = int(os.environ.get("UPDATE_TIMEOUT_SECS", "900"))  # 15 minutes
 
 logging.basicConfig(
     level=logging.INFO,
@@ -42,6 +48,10 @@ _llm = OpenAI(
     base_url=LLM_BASE_URL,
     api_key=os.environ.get("TIP_API_KEY", "no-key"),
 )
+
+## Active fault tracking: room → {detected_at, last_update}
+_active_faults: dict = {}
+_faults_lock = threading.Lock()
 
 # ── Tier 1: Fixed perks (no LLM needed) ───────────────────────────────────────
 TIER_1_PERKS = {
@@ -80,12 +90,12 @@ Given:
 
 Recommend ONE primary perk and optionally ONE secondary perk from this menu:
 - Complimentary dinner for two at the hotel restaurant (up to $150 value)
-- Spa credit ($50–$150 depending on guest tier and severity)
+- Spa credit ($50-$150 depending on guest tier and severity)
 - Complimentary room night (current stay extension or future stay)
 - Room upgrade for remainder of stay
-- Loyalty points bonus (1000–5000 points)
+- Loyalty points bonus (1000-5000 points)
 - Late checkout + early check-in on next visit
-- Percentage discount on current bill (10–25%)
+- Percentage discount on current bill (10-25%)
 
 Guidelines:
 - Higher loyalty tier → more generous perks
@@ -192,28 +202,100 @@ def health():
     return jsonify({"status": "ok", "service": "perk-agent"})
 
 
+@app.get("/status")
+def perk_status():
+    with _faults_lock:
+        return jsonify({"service": "perk-agent", "active_faults": dict(_active_faults)})
+
+
+@app.post("/fault-update")
+def fault_update():
+    """Receive a diagnostic progress update from the network agent."""
+    data = request.get_json(force=True)
+    room = data.get("room", "unknown")
+    turn = data.get("turn", 0)
+    tool = data.get("tool", "unknown")
+    with _faults_lock:
+        if room in _active_faults:
+            _active_faults[room]["last_update"] = time.time()
+            _active_faults[room]["turn_count"] = turn
+    log.info("Fault update — room=%s turn=%d tool=%s", room, turn, tool)
+    return jsonify({"status": "acknowledged"})
+
+
+@app.post("/guest-report")
+def guest_report():
+    """Receive a guest-initiated problem report."""
+    data = request.get_json(force=True)
+    room = data.get("room", "unknown")
+    message = data.get("message", "Guest reported an issue.")
+    log.info("═" * 60)
+    log.info("GUEST REPORT — Room %s", room)
+    log.info(message)
+    log.info("Forwarding to network agent for diagnostics...")
+    log.info("═" * 60)
+    try:
+        resp = requests.get(f"{AGENT_URL}/status", timeout=5)
+        agent_info = resp.json()
+        log.info("Network agent current status: %s", agent_info.get("status"))
+    except Exception as exc:
+        log.warning("Could not reach network agent: %s", exc)
+    return jsonify(
+        {
+            "status": "received",
+            "room": room,
+            "message": "We are investigating your issue and will update you shortly.",
+        }
+    )
+
+
 @app.post("/fault-event")
 def fault_event():
     """Receive a fault-event webhook from the network agent and issue perks.
 
-    Tier is determined by the 'tier' field in the payload:
-      - tier=1 (default): Fault detected — issue immediate fixed perks
-      - tier=2: Fault escalated (unresolved) — LLM recommends higher-level perks
+    Behaviour by status:
+      - status=detected (tier=1): Fault just found — issue immediate fixed perks and open tracking
+      - status=resolved  (tier=1): Issue fixed — log resolution, no additional perks
+      - status=escalated (tier=2): Could not fix — LLM recommends higher-level perks
     """
     data = request.get_json(force=True)
     room = data.get("room", "unknown")
+    status = data.get("status", "detected")
     tier = data.get("tier", 1)
     fault_type = data.get("fault_type", "unknown")
 
     log.info(
-        "Received fault event — room=%s tier=%d fault_type=%s",
+        "Received fault event — room=%s status=%s tier=%d fault_type=%s",
         room,
+        status,
         tier,
         fault_type,
     )
 
-    if tier == 2:
+    if status == "detected":
+        ## Open fault tracking so the background poller can monitor it
+        with _faults_lock:
+            _active_faults[room] = {
+                "detected_at": data.get("timestamp", datetime.now(UTC).isoformat()),
+                "last_update": time.time(),
+                "turn_count": 0,
+            }
+        result = _build_tier_1_response(room)
+    elif status == "resolved":
+        ## Close fault tracking and log resolution — tier-1 perks were already issued
+        with _faults_lock:
+            _active_faults.pop(room, None)
+        result = {
+            "tier": 1,
+            "status": "resolved",
+            "room": room,
+            "message": "Issue resolved — tier-1 perks already issued, no further action.",
+        }
+    elif tier == 2:
         _emit_event("tier2", f"🏆 Escalation received for Room {room} — generating elevated perks via LLM...")
+        ## Escalated and unresolved — close tracking and issue elevated LLM perks
+        with _faults_lock:
+            _active_faults.pop(room, None)
         result = _build_tier_2_response(data)
         _emit_event("tier2", f"Tier 2 perks issued for Room {room}", data=result.get("recommendation"))
     else:
@@ -250,7 +332,39 @@ def fault_event():
     return jsonify(result)
 
 
+# ── Background polling ─────────────────────────────────────────────────────────
+def _poll_agent_loop() -> None:
+    """Poll the network agent for status if an active fault has gone silent for UPDATE_TIMEOUT_SECS."""
+    while True:
+        time.sleep(60)
+        with _faults_lock:
+            stale = [
+                room
+                for room, info in _active_faults.items()
+                if time.time() - info.get("last_update", 0) > UPDATE_TIMEOUT_SECS
+            ]
+        for room in stale:
+            log.warning(
+                "No update from agent for room=%s in %ds — polling agent for status",
+                room,
+                UPDATE_TIMEOUT_SECS,
+            )
+            try:
+                resp = requests.get(f"{AGENT_URL}/status", timeout=5)
+                agent_info = resp.json()
+                log.info(
+                    "Agent status poll — room=%s agent_status=%s", room, agent_info.get("status")
+                )
+                ## Reset the timer so we don't spam polls every 60s
+                with _faults_lock:
+                    if room in _active_faults:
+                        _active_faults[room]["last_update"] = time.time()
+            except Exception as exc:
+                log.warning("Agent status poll failed for room=%s: %s", room, exc)
+
+
 # ── Entry point ────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     log.info("Perk Agent starting on port 8081")
+    threading.Thread(target=_poll_agent_loop, daemon=True, name="agent-poller").start()
     app.run(host="0.0.0.0", port=8081)
