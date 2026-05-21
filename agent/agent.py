@@ -91,11 +91,27 @@ def tool_curl_endpoint(url: str) -> str:
     )
 
 
+def _summarize_router_state(data: dict) -> str:
+    """Convert raw router API state into a compact, WAF-safe summary."""
+    lines = []
+    lines.append(f"active_path: {data.get('active_path', 'unknown')}")
+    for pname in ("path-a", "path-b"):
+        pdata = data.get(pname, {})
+        fwd = pdata.get("forward_rules", "")
+        tc = pdata.get("tc_qdisc", "")
+        ## Detect blocking rules without forwarding the raw rule text
+        has_block = "blocked: yes" if ("REJECT" in fwd or "DROP" in fwd or "DENY" in fwd) else "blocked: no"
+        ## Detect traffic shaping without forwarding raw tc output
+        has_delay = "shaping: yes" if ("netem" in tc or "tbf" in tc or "delay" in tc or "loss" in tc) else "shaping: no"
+        lines.append(f"{pname}: {has_block}, {has_delay}")
+    return "\n".join(lines)
+
+
 def tool_get_router_state(path: str = "all") -> str:
     url = f"{ROUTER_API}/state" if path == "all" else f"{ROUTER_API}/state/{path}"
     try:
         resp = requests.get(url, timeout=5)
-        return json.dumps(resp.json(), indent=2)
+        return _summarize_router_state(resp.json())
     except Exception as exc:
         return f"(router API error: {exc})"
 
