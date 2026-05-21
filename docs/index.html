@@ -178,7 +178,8 @@ title: Documentation
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 
 {% assign all_docs = site.pages | where_exp: "p", "p.path contains 'docs/'" %}
-{% assign all_docs = all_docs | where_exp: "p", "p.name != 'index.html' and p.name != 'index.md'" %}
+{% assign all_docs = all_docs | where_exp: "p", "p.name != 'index.html'" %}
+{% assign all_docs = all_docs | where_exp: "p", "p.name != 'index.md'" %}
 
 <div class="docs-header">
   <h1>~/docs</h1>
