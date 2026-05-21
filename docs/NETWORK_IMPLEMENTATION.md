@@ -38,13 +38,15 @@ monitoring, and the webhook contract that connects the two halves of the system.
 
 **Containers:**
 
-| Container    | Networks                              | Purpose                                      |
-|--------------|---------------------------------------|----------------------------------------------|
-| `client`     | `front-net`                           | Simulates a hotel guest device; HTTP loop    |
-| `router`     | `front-net`, `path-a-net`, `path-b-net` | Alpine + iptables/tc; fault injection target |
-| `webserver`  | `path-a-net`, `path-b-net`            | nginx; simulates hotel internet portal       |
-| `agent`      | `front-net` + docker socket           | Python/TIP.ai LLM troubleshooting loop       |
-| `uptime-kuma`| host port 3001                        | External monitoring / demo status board      |
+| Container     | Networks                                | Purpose                                                 |
+|---------------|-----------------------------------------|---------------------------------------------------------|
+| `client`      | `front-net`                             | Simulates a hotel guest device; HTTP loop               |
+| `router`      | `front-net`, `path-a-net`, `path-b-net` | Alpine + iptables/tc; fault injection target            |
+| `webserver`   | `path-a-net`, `path-b-net`              | nginx; simulates hotel internet portal                  |
+| `agent`       | `front-net` + docker socket             | Python/LiteLLM tool-use loop; fault detection & healing |
+| `perk-agent`  | `front-net`                             | Python; receives webhooks, issues guest compensation    |
+| `frontend`    | `front-net`                             | React dashboard; real-time event stream display         |
+| `uptime-kuma` | host port 3001                          | External monitoring / demo status board                 |
 
 **Docker Networks:**
 
@@ -150,7 +152,7 @@ services:
     volumes:
       - ./webserver/html:/usr/share/nginx/html:ro
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/"]
       interval: 5s
       timeout: 3s
       retries: 3
@@ -171,11 +173,14 @@ services:
         ipv4_address: 172.22.0.254
     ports:
       - "5000:5000"
+    depends_on:
+      webserver:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 5s
       timeout: 3s
-      retries: 3
+      retries: 5
 
   client:
     build: ./client
@@ -187,7 +192,27 @@ services:
       router:
         condition: service_healthy
     environment:
-      - TARGET_URL=http://172.20.0.254/  # router proxies to webserver
+      - TARGET_URL=http://172.20.0.254/
+
+  perk-agent:
+    build: ./perk_agent
+    container_name: perk-agent
+    networks:
+      - front-net
+    env_file:
+      - .env
+    environment:
+      - FRONTEND_URL=http://frontend:3000/api/events
+    ports:
+      - "8081:8081"
+    depends_on:
+      router:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
 
   agent:
     build: ./agent
@@ -200,11 +225,32 @@ services:
       - .env
     environment:
       - ROUTER_API=http://172.20.0.254:5000
+      - WEBHOOK_URL=http://perk-agent:8081/fault-event
+      - ROOM_NUMBER=412
+      - FRONTEND_URL=http://frontend:3000/api/events
+      - POLL_INTERVAL=3
+      - FAULT_THRESHOLD=1
     ports:
       - "8080:8080"
     depends_on:
       router:
         condition: service_healthy
+      perk-agent:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    networks:
+      - front-net
+    ports:
+      - "80:80"
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   uptime-kuma:
     image: louislam/uptime-kuma:1
@@ -482,76 +528,117 @@ requests>=2.31
 ### Agent Design
 
 The agent runs two concurrent threads:
-1. **Poll loop** — every 10 seconds, checks client HTTP success rate over the last 30s
-2. **Flask health endpoint** — `GET /health` for Uptime Kuma
+1. **Poll loop** — every `POLL_INTERVAL` seconds (default: 3), reads the last 20 lines from the client container log and counts consecutive `ERR` entries
+2. **Flask server** — serves `GET /health` and `GET /status`
 
-On detecting failures (≥3 consecutive `HTTP 000` or non-200 responses from client logs), the
-agent enters a tool-calling loop with a maximum of 8 turns.
+On detecting `FAULT_THRESHOLD` (default: 1) or more consecutive `ERR` lines, and after a `LOOP_COOLDOWN` (default: 60s) since the last run, the agent enters a tool-calling loop with a maximum of 8 turns. A `threading.Event` flag prevents re-entrant loops.
 
-**LLM client** — uses the TIP.ai SDK (Marriott's internal LLM provisioner, backed by LiteLLM):
+**Environment variables:**
+
+| Variable          | Default                              | Purpose                                             |
+|-------------------|--------------------------------------|-----------------------------------------------------|
+| `TIP_API_KEY`     | —                                    | LLM gateway authentication key (required)           |
+| `LLM_BASE_URL`    | `https://llmgw.codefest2026.marriott.com/v1` | LiteLLM-compatible gateway URL            |
+| `LLM_MODEL`       | `nova-pro`                           | Model name passed to the LLM gateway                |
+| `ROUTER_API`      | `http://172.20.0.254:5000`           | Router management API base URL                      |
+| `WEBHOOK_URL`     | `http://perk-agent:8081/fault-event` | Perk-agent fault event endpoint                     |
+| `PERK_AGENT_URL`  | `http://perk-agent:8081`             | Perk-agent base URL for progress updates            |
+| `ROOM_NUMBER`     | `412`                                | Room number included in all webhook payloads        |
+| `FRONTEND_URL`    | _(empty)_                            | Frontend event stream URL; skipped if empty         |
+| `POLL_INTERVAL`   | `3`                                  | Seconds between client log polls                    |
+| `FAULT_THRESHOLD` | `1`                                  | Consecutive ERR lines required to trigger loop      |
+| `LOOP_COOLDOWN`   | `60`                                 | Minimum seconds between agent loop runs             |
+
+**Flask endpoints:**
+
+| Method | Endpoint  | Response                                                          |
+|--------|-----------|-------------------------------------------------------------------|
+| GET    | `/health` | `{"status": "ok", "busy": <bool>}`                               |
+| GET    | `/status` | `{"status": "idle\|running\|cooldown", "fault_detected_at": ..., "current_turn": N, "last_tool": "...", "room": "412"}` |
+
+**LLM client** — uses the OpenAI-compatible SDK pointed at the LiteLLM gateway:
 
 ```python
-from tip_sdk import TipClient
+from openai import OpenAI
 
-client = TipClient()  # reads TIP_API_KEY from environment
-response = client.chat.completions.create(
-    model="anthropic.claude-sonnet-4-20250514-v1:0",
+_llm = OpenAI(
+    base_url=LLM_BASE_URL,
+    api_key=os.environ.get("TIP_API_KEY"),
+)
+response = _llm.chat.completions.create(
+    model=LLM_MODEL,
     messages=messages,
-    tools=tool_definitions,  # OpenAI-compatible tool schema
+    tools=TOOL_DEFINITIONS,
 )
 ```
 
-The interface is OpenAI-compatible — tools are defined as JSON schema objects and
-tool calls come back in `response.choices[0].message.tool_calls`.
+> **WAF note:** The gateway runs a WAF that blocks private IP addresses and certain security
+> keywords in message bodies. Router state is therefore summarized before being included in
+> LLM context (raw iptables/tc output is never forwarded). `curl_endpoint` accepts named
+> targets (`gateway`, `path-a`, `path-b`) rather than raw IPs.
 
-**LLM client** — uses the TIP.ai SDK (Marriott's internal LLM provisioner, backed by LiteLLM):
+**Agent–perk-agent communication lifecycle:**
 
-```python
-from tip_sdk import TipClient
-
-client = TipClient()  # reads TIP_API_KEY from environment
-response = client.chat.completions.create(
-    model="anthropic.claude-sonnet-4-20250514-v1:0",
-    messages=messages,
-    tools=tool_definitions,  # OpenAI-compatible tool schema
-)
-```
-
-The interface is OpenAI-compatible — tools are defined as JSON schema objects and
-tool calls come back in `response.choices[0].message.tool_calls`.
+1. **Detection** — poll loop detects fault, immediately fires `POST /fault-event` with `status=detected, tier=1` → perk-agent issues fixed tier-1 perks (WiFi refund + bar item) without waiting for the LLM loop
+2. **Progress updates** — each tool call in the loop fires `POST /fault-update` with turn number and tool name → perk-agent resets its stale-timeout timer
+3. **Resolution** — agent calls `clear` tool → fires `POST /fault-event` with `status=resolved, tier=1` → perk-agent closes tracking, no additional perks
+4. **Escalation** — agent calls `escalate` tool (or turn limit is hit) → fires `POST /fault-event` with `status=escalated, tier=2` → perk-agent calls LLM for elevated compensation
 
 **Tools exposed to the LLM:**
 
-| Tool name            | What it does                                                               |
-|----------------------|----------------------------------------------------------------------------|
-| `ping_host`          | `docker exec client ping -c 4 <host>` — basic reachability                |
-| `curl_endpoint`      | `docker exec client curl -sv <url>` — HTTP check with timing              |
-| `get_router_state`   | `GET /state/<path>` on router API — returns tc and iptables state          |
-| `restart_container`  | Docker SDK `container.restart(name)` — restarts a named container         |
-| `switch_active_path` | `POST /active-path` on router API — switches preferred path               |
-| `clear_faults`       | `DELETE /fault/<path>` on router API — clears tc/iptables faults          |
-| `escalate`           | Formats troubleshooting history and POSTs to `WEBHOOK_URL`                |
+| Tool name          | What it does                                                                |
+|--------------------|-----------------------------------------------------------------------------|
+| `ping_host`        | `docker exec client ping -c 4 <host>` — basic reachability                 |
+| `curl_endpoint`    | HTTP check from client; accepts named target (`gateway`, `path-a`, `path-b`) |
+| `get_router_state` | `GET /state[/<path>]` on router API — returns summarized tc and iptables state |
+| `switch_active_path` | `POST /active-path` on router API — switches preferred path              |
+| `clear_faults`     | `DELETE /fault/<path>` on router API; `path=both` issues two calls         |
+| `restart_container`| Docker SDK `container.restart(name)` — restarts a named container          |
+| `clear`            | **Terminal — resolved.** Fires `status=resolved` webhook; call when service is restored |
+| `escalate`         | **Terminal — unresolved.** Fires `status=escalated` webhook; call only when all remediation fails |
 
-**Escalation payload** (sent to the guest-facing LLM service):
+> `clear` and `escalate` are mutually exclusive terminal actions. The LLM must call exactly one
+> as its last turn. If the turn limit is exhausted without a terminal call, the safety net
+> forces `escalate`.
+
+**`clear` webhook payload** (sent to perk-agent `POST /fault-event`):
 
 ```json
 {
-  "status": "detected | resolved | escalated",
+  "status": "resolved",
+  "tier": 1,
   "fault_type": "latency | loss | blackhole | unknown",
-  "active_path": "a | b | both",
-  "resolved_by": "switch_path | clear_faults | restart | null",
-  "turns_used": 5,
+  "active_path": "a | b | unknown",
+  "resolved_by": "clear_faults | switch_active_path | restart_container | null",
+  "turns_used": 3,
+  "room": "412",
+  "summary": "Path A blackhole cleared; connectivity restored on path A.",
   "history": [
-    {"turn": 1, "tool": "ping_host", "input": {"host": "172.21.0.10"}, "result": "..."},
-    {"turn": 2, "tool": "get_router_state", "input": {"path": "a"}, "result": "..."}
+    {"turn": 1, "tool": "get_router_state", "input": {"path": "all"}, "result": "..."},
+    {"turn": 2, "tool": "clear_faults", "input": {"path": "a"}, "result": "..."}
   ],
-  "timestamp": "2026-05-20T14:23:00Z"
+  "timestamp": "2026-05-21T14:23:00Z"
 }
 ```
 
-> When `status` is `resolved`, the webhook still fires so the guest-facing LLM can inform
-> guests that the issue has been corrected. When `status` is `escalated`, the history is
-> included so the guest LLM has full context.
+**`escalate` webhook payload** (sent to perk-agent `POST /fault-event`):
+
+```json
+{
+  "status": "escalated",
+  "tier": 2,
+  "fault_type": "latency | loss | blackhole | unknown",
+  "active_path": "a | b | unknown",
+  "turns_used": 8,
+  "room": "412",
+  "summary": "Both paths blackholed; could not restore service after 8 turns.",
+  "history": [
+    {"turn": 1, "tool": "get_router_state", "input": {"path": "all"}, "result": "..."},
+    ...
+  ],
+  "timestamp": "2026-05-21T14:23:00Z"
+}
+```
 
 ### Phase 6 Tests
 
