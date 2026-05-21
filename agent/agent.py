@@ -183,6 +183,17 @@ def tool_escalate(
         active_path,
         turns_used,
     )
+
+    # ── Tier 2: Only trigger elevated perks when fault is unresolved ───────
+    if status == "escalated":
+        tier2_payload = {**payload, "tier": 2}
+        try:
+            requests.post(WEBHOOK_URL, json=tier2_payload, timeout=10)
+            log.info("Perk agent tier 2 notified (escalation)")
+        except Exception as exc:
+            log.warning("Perk agent tier 2 notification failed: %s", exc)
+
+    # ── Always fire the base escalation webhook for audit/logging ──────────
     try:
         resp = requests.post(WEBHOOK_URL, json=payload, timeout=10)
         return f"Webhook delivered: HTTP {resp.status_code}"
@@ -378,8 +389,22 @@ def _get_recent_client_lines(tail: int = 20) -> tuple[int, list[str]]:
 
 
 # ── Agent tool-use loop ────────────────────────────────────────────────────────
+def _notify_perk_agent(tier: int, **kwargs) -> None:
+    """Fire a perk-agent notification (best-effort, non-blocking to diagnosis)."""
+    payload = {"tier": tier, "room": ROOM_NUMBER, **kwargs}
+    try:
+        resp = requests.post(WEBHOOK_URL, json=payload, timeout=10)
+        log.info("Perk agent tier %d notified — HTTP %d", tier, resp.status_code)
+    except Exception as exc:
+        log.warning("Perk agent tier %d notification failed: %s", tier, exc)
+
+
 def _run_agent_loop(trigger_lines: list[str]) -> None:
     log.info("Agent loop started")
+
+    # ── Tier 1: Immediate perks (WiFi refund + bar item) ───────────────────
+    _notify_perk_agent(tier=1, fault_type="detected", summary="Network fault detected")
+
     history: list[dict] = []
     turn = 0
     escalated = False

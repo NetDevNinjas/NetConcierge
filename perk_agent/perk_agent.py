@@ -1,8 +1,15 @@
-"""NetConcierge Perk Agent.
+"""NetConcierge Perk Agent — 2-Tier Compensation System.
 
-Receives fault-event webhooks from the network troubleshooting agent and uses
-an LLM to recommend perks or refunds based on the customer profile and the
-nature/severity of the network disruption experienced.
+Receives fault-event webhooks from the network troubleshooting agent and issues
+perks based on a tiered approach:
+
+  Tier 1 (immediate): Triggered when a fault is first detected. Provides a
+      same-day WiFi bill refund and a complimentary drink or appetizer at the
+      hotel bar. No LLM needed — these are fixed perks.
+
+  Tier 2 (escalation): Triggered only when the network agent cannot resolve
+      the fault (status=escalated). Uses an LLM to recommend higher-level perks
+      (free dinner, additional comp discounts) based on the customer profile.
 """
 
 import json
@@ -35,40 +42,63 @@ _llm = OpenAI(
     api_key=os.environ.get("TIP_API_KEY", "no-key"),
 )
 
-SYSTEM_PROMPT = """\
+# ── Tier 1: Fixed perks (no LLM needed) ───────────────────────────────────────
+TIER_1_PERKS = {
+    "tier": 1,
+    "perks": [
+        {
+            "type": "wifi_refund",
+            "value": "Full WiFi bill refund for today",
+            "description": "Guest's WiFi charges for the current day are fully refunded.",
+        },
+        {
+            "type": "complimentary_bar_item",
+            "value": "Free drink or appetizer at the hotel bar",
+            "description": "Guest may redeem one complimentary drink or appetizer at the lobby bar.",
+        },
+    ],
+    "apology_note": (
+        "We sincerely apologize for the WiFi disruption. We've refunded today's "
+        "WiFi charges and would love to offer you a complimentary drink or appetizer "
+        "at our lobby bar while our team works to restore full service."
+    ),
+}
+
+# ── Tier 2: LLM-recommended perks for unresolved escalations ──────────────────
+TIER_2_SYSTEM_PROMPT = """\
 You are NetConcierge's Customer Experience Agent for a luxury hotel.
 
-Your role is to recommend appropriate perks, credits, or refunds to guests who
-experienced network disruptions during their stay. You balance guest satisfaction
-with business sustainability.
+A network fault could NOT be automatically resolved and has been escalated.
+The guest has already received Tier 1 compensation (WiFi refund for today +
+complimentary drink/appetizer at the bar). Now you must recommend ADDITIONAL
+higher-level perks to make up for the extended disruption.
 
 Given:
 - A customer profile (loyalty tier, stay history, booking value, etc.)
-- Details about the network fault they experienced (type, duration, resolution status)
+- Details about the unresolved network fault (type, duration, resolution attempts)
 
 Recommend ONE primary perk and optionally ONE secondary perk from this menu:
-- Complimentary late checkout
-- Free room upgrade (next stay)
-- Spa credit ($25–$100 depending on severity)
-- Dining credit ($20–$75 depending on severity)
-- Partial WiFi refund (if WiFi was a paid add-on)
-- Loyalty points bonus (500–2000 points)
-- Complimentary night (only for severe, unresolved outages affecting high-tier guests)
-- Written apology from management
+- Complimentary dinner for two at the hotel restaurant (up to $150 value)
+- Spa credit ($50–$150 depending on guest tier and severity)
+- Complimentary room night (current stay extension or future stay)
+- Room upgrade for remainder of stay
+- Loyalty points bonus (1000–5000 points)
+- Late checkout + early check-in on next visit
+- Percentage discount on current bill (10–25%)
 
 Guidelines:
 - Higher loyalty tier → more generous perks
-- Unresolved faults (status=escalated) → more generous than resolved ones
-- Longer disruptions (more turns_used) suggest longer outages → more generous
-- Business travelers needing WiFi → prioritize connectivity-related compensation
-- Consider the guest's history and special circumstances
+- Longer disruptions (more turns_used) → more generous
+- Business travelers who needed WiFi for work → prioritize meaningful compensation
+- Consider the guest's booking value and lifetime spend
+- These perks stack ON TOP of Tier 1 (WiFi refund + bar item already given)
 
 Respond with a JSON object:
 {
   "primary_perk": {"type": "...", "value": "...", "reason": "..."},
   "secondary_perk": {"type": "...", "value": "...", "reason": "..."} or null,
-  "apology_note": "A brief personalized apology message for the guest",
-  "internal_notes": "Brief justification for the recommendation"
+  "apology_note": "A personalized escalation apology message for the guest",
+  "internal_notes": "Brief justification for the elevated compensation"
 }
 """
 
@@ -83,44 +113,60 @@ def _load_customer_profile() -> str:
         return "(no customer profile available)"
 
 
-def _get_recommendation(fault_event: dict) -> dict:
-    """Call the LLM with fault context + customer profile to get a perk recommendation."""
+def _build_tier_1_response(room: str) -> dict:
+    """Return the fixed Tier 1 perk package."""
+    return {
+        **TIER_1_PERKS,
+        "room": room,
+    }
+
+
+def _build_tier_2_response(fault_event: dict) -> dict:
+    """Call the LLM to recommend Tier 2 perks for an unresolved escalation."""
     customer_profile = _load_customer_profile()
 
     user_message = (
-        f"## Network Fault Event\n"
-        f"- Status: {fault_event.get('status', 'unknown')}\n"
+        f"## Escalated Network Fault (Unresolved)\n"
         f"- Fault Type: {fault_event.get('fault_type', 'unknown')}\n"
         f"- Summary: {fault_event.get('summary', 'No summary provided')}\n"
         f"- Room: {fault_event.get('room', 'unknown')}\n"
         f"- Active Path: {fault_event.get('active_path', 'unknown')}\n"
-        f"- Turns Used (proxy for disruption duration): {fault_event.get('turns_used', 0)}\n"
+        f"- Resolution Attempts (turns_used): {fault_event.get('turns_used', 0)}\n"
         f"- Timestamp: {fault_event.get('timestamp', 'unknown')}\n\n"
         f"## Customer Profile\n"
         f"{customer_profile}\n\n"
-        f"Please recommend appropriate perks or compensation for this guest."
+        f"The guest already received Tier 1 perks (WiFi refund + bar item). "
+        f"Please recommend additional higher-level compensation."
     )
 
     try:
         response = _llm.chat.completions.create(
             model=LLM_MODEL,
             messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": TIER_2_SYSTEM_PROMPT},
                 {"role": "user", "content": user_message},
             ],
             temperature=0.3,
         )
         content = response.choices[0].message.content
 
-        # Try to parse as JSON; fall back to raw text
         try:
-            return json.loads(content)
+            recommendation = json.loads(content)
         except (json.JSONDecodeError, TypeError):
-            return {"raw_recommendation": content}
+            recommendation = {"raw_recommendation": content}
 
     except Exception as exc:
         log.error("LLM API call failed: %s", exc)
-        return {"error": str(exc), "fallback": "Offer standard apology and 500 loyalty points"}
+        recommendation = {
+            "error": str(exc),
+            "fallback": "Offer complimentary dinner for two and 2000 loyalty points",
+        }
+
+    return {
+        "tier": 2,
+        "room": fault_event.get("room", "unknown"),
+        "recommendation": recommendation,
+    }
 
 
 # ── Flask endpoints ────────────────────────────────────────────────────────────
@@ -131,25 +177,33 @@ def health():
 
 @app.post("/fault-event")
 def fault_event():
-    """Receive a fault-event webhook from the network agent and recommend perks."""
+    """Receive a fault-event webhook from the network agent and issue perks.
+
+    Tier is determined by the 'tier' field in the payload:
+      - tier=1 (default): Fault detected — issue immediate fixed perks
+      - tier=2: Fault escalated (unresolved) — LLM recommends higher-level perks
+    """
     data = request.get_json(force=True)
     room = data.get("room", "unknown")
-    status = data.get("status", "unknown")
+    tier = data.get("tier", 1)
     fault_type = data.get("fault_type", "unknown")
 
     log.info(
-        "Received fault event — room=%s status=%s fault_type=%s",
+        "Received fault event — room=%s tier=%d fault_type=%s",
         room,
-        status,
+        tier,
         fault_type,
     )
 
-    recommendation = _get_recommendation(data)
+    if tier == 2:
+        result = _build_tier_2_response(data)
+    else:
+        result = _build_tier_1_response(room)
 
     log.info("═" * 60)
-    log.info("PERK RECOMMENDATION for Room %s", room)
+    log.info("TIER %d PERKS for Room %s", tier, room)
     log.info("═" * 60)
-    log.info(json.dumps(recommendation, indent=2))
+    log.info(json.dumps(result, indent=2))
     log.info("═" * 60)
 
     # ── Optional: Forward recommendation to an external system ──────────────
@@ -158,9 +212,9 @@ def fault_event():
     #
     # forward_payload = {
     #     "room": room,
-    #     "fault_status": status,
+    #     "tier": tier,
     #     "fault_type": fault_type,
-    #     "recommendation": recommendation,
+    #     "result": result,
     # }
     # try:
     #     forward_url = os.environ.get("FORWARD_URL", "http://localhost:9000/recommendations")
@@ -169,11 +223,7 @@ def fault_event():
     # except Exception as exc:
     #     log.warning("Failed to forward recommendation: %s", exc)
 
-    return jsonify({
-        "status": "recommendation_generated",
-        "room": room,
-        "recommendation": recommendation,
-    })
+    return jsonify(result)
 
 
 # ── Entry point ────────────────────────────────────────────────────────────────
