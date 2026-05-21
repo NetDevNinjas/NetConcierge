@@ -6,6 +6,7 @@ FAULT_THRESHOLD consecutive HTTP failures it enters a TIP.ai tool-use loop
 with the outcome regardless of whether the fault was resolved or not.
 """
 
+import contextlib
 import json
 import logging
 import os
@@ -415,10 +416,8 @@ def _emit_event(event_type: str, message: str, data: dict | None = None) -> None
         "message": message,
         "data": data,
     }
-    try:
+    with contextlib.suppress(Exception):
         requests.post(FRONTEND_URL, json=payload, timeout=3)
-    except Exception:
-        pass  # Non-critical — don't disrupt agent flow
 
 
 def _notify_perk_agent(tier: int, **kwargs) -> None:
@@ -536,7 +535,7 @@ def _run_agent_loop(trigger_lines: list[str]) -> None:
             history.append({"turn": turn, "tool": name, "input": args, "result": result})
             _agent_state.update({"current_turn": turn, "last_tool": name})
             if name != "escalate":
-                try:
+                with contextlib.suppress(Exception):
                     requests.post(
                         f"{PERK_AGENT_URL}/fault-update",
                         json={
@@ -548,8 +547,6 @@ def _run_agent_loop(trigger_lines: list[str]) -> None:
                         },
                         timeout=3,
                     )
-                except Exception:
-                    pass  # Non-critical — don't disrupt diagnosis
             ## Truncate long tool results to avoid gateway context limits (403)
             tool_content = str(result)
             if len(tool_content) > 1500:
