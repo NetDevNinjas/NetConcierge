@@ -6,7 +6,7 @@
 #
 # Optional env vars:
 #   DOCKER      — docker binary (default: docker; EC2 needs 'sudo docker')
-#   AGENT_HOST  — host:port for the agent  (default: localhost:8080)
+#   AGENT_HOST  — host:port for the agent  (default: localhost:8081)
 #   PERK_HOST   — host:port for perk-agent (default: localhost:8081)
 
 set -euo pipefail
@@ -14,7 +14,7 @@ set -euo pipefail
 DOCKER="${DOCKER:-docker}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-AGENT_HOST="${AGENT_HOST:-localhost:8080}"
+AGENT_HOST="${AGENT_HOST:-localhost:8081}"
 PERK_HOST="${PERK_HOST:-localhost:8081}"
 
 # ── Colours ────────────────────────────────────────────────────────────────────
@@ -77,13 +77,15 @@ poll_agent() {
 
 show_logs() {
     local service="$1"
-    local since="$2"
+    ## epoch seconds recorded at injection time; compute relative duration for --since
+    local inject_epoch="$2"
     local tail="${3:-50}"
+    local elapsed=$(( $(date +%s) - inject_epoch + 5 ))
     echo
     divider
-    echo -e "${CYAN}  ${BOLD}${service}${RESET}${CYAN} logs since fault injection${RESET}"
+    echo -e "${CYAN}  ${BOLD}${service}${RESET}${CYAN} logs (last ~${elapsed}s)${RESET}"
     divider
-    $DOCKER logs "$service" --since "$since" 2>&1 | tail -n "$tail"
+    $DOCKER logs "$service" --since "${elapsed}s" 2>&1 | tail -n "$tail"
     divider
 }
 
@@ -134,10 +136,10 @@ EOF
 pause
 
 step "Injecting blackhole fault on path A..."
-T1=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+T1=$(date +%s)
 cd "$REPO_DIR"
 DOCKER="$DOCKER" bash scripts/inject-fault.sh --path a --type blackhole
-ok "Fault injected at ${T1}."
+ok "Fault injected at $(date -u +"%Y-%m-%dT%H:%M:%SZ")."
 info "Agent polls every 10s and needs 3 consecutive ERR lines (~30s to trigger)."
 
 poll_agent "Monitoring agent — waiting for detection and resolution..." 9
@@ -176,10 +178,10 @@ EOF
 pause
 
 step "Injecting blackhole fault on BOTH paths..."
-T2=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+T2=$(date +%s)
 cd "$REPO_DIR"
 DOCKER="$DOCKER" bash scripts/inject-fault.sh --path both --type blackhole
-ok "Full blackout injected at ${T2}."
+ok "Full blackout injected at $(date -u +"%Y-%m-%dT%H:%M:%SZ")."
 info "LLM loop runs up to 8 turns before escalating — allow ~60s."
 
 poll_agent "Monitoring agent — waiting for escalation..." 12
@@ -217,7 +219,7 @@ EOF
 pause
 
 step "Guest Sarah reporting WiFi problems via /guest-report..."
-T3=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+T3=$(date +%s)
 echo
 echo -e "${DIM}  Request:${RESET}"
 echo '  POST /guest-report {"room": "412", "message": "My WiFi keeps dropping during my presentation prep."}'
