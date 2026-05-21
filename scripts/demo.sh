@@ -45,8 +45,8 @@ divider() { echo -e "${CYAN}$(printf '─%.0s' $(seq 1 68))${RESET}"; }
 
 pause() {
     echo
-    echo -e "${BOLD}  ↵  Press Enter to continue...${RESET}"
-    read -r
+    echo -e "${BOLD}  ⏳  Continuing in 20 seconds...${RESET}"
+    sleep 20
 }
 
 agent_status() {
