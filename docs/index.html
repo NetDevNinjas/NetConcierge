@@ -177,8 +177,7 @@ title: Documentation
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 
-{% assign all_docs = site.pages | where_exp: "p", "p.path contains 'docs/'" %}
-{% assign all_docs = all_docs | where_exp: "p", "p.name != 'index.html'" %}
+{% assign all_docs = site.pages | where_exp: "p", "p.name != 'index.html'" %}
 {% assign all_docs = all_docs | where_exp: "p", "p.name != 'index.md'" %}
 
 <div class="docs-header">
@@ -195,8 +194,8 @@ title: Documentation
 {% assign unique_subdirs = "" | split: "|" %}
 {% for p in all_docs %}
   {% assign parts = p.path | split: "/" %}
-  {% if parts.size > 2 %}
-    {% assign subdir = parts[1] %}
+  {% if parts.size > 1 %}
+    {% assign subdir = parts[0] %}
     {% assign already = false %}
     {% for d in unique_subdirs %}
       {% if d == subdir %}
@@ -212,7 +211,7 @@ title: Documentation
 {% assign root_pages = "" | split: "|" %}
 {% for p in all_docs %}
   {% assign parts = p.path | split: "/" %}
-  {% if parts.size == 2 %}
+  {% if parts.size == 1 %}
     {% assign root_pages = root_pages | push: p %}
   {% endif %}
 {% endfor %}
