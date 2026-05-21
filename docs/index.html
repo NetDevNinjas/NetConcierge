@@ -1,0 +1,405 @@
+---
+layout: default
+title: Documentation
+---
+
+<style>
+  :root {
+    --brand: #1D9E75;
+    --brand-light: #E1F5EE;
+    --brand-dark: #085041;
+    --text: #2C2C2A;
+    --text-muted: #5F5E5A;
+    --text-faint: #888780;
+    --bg: #ffffff;
+    --bg-secondary: #F1EFE8;
+    --border: rgba(44, 44, 42, 0.12);
+    --border-hover: rgba(44, 44, 42, 0.25);
+    --radius: 10px;
+    --font-mono: "JetBrains Mono", "Fira Mono", "Cascadia Code", monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --brand: #5DCAA5;
+      --brand-light: #04342C;
+      --brand-dark: #9FE1CB;
+      --text: #E8E6DF;
+      --text-muted: #B4B2A9;
+      --text-faint: #888780;
+      --bg: #1a1a18;
+      --bg-secondary: #222220;
+      --border: rgba(232, 230, 223, 0.1);
+      --border-hover: rgba(232, 230, 223, 0.22);
+    }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: "IBM Plex Sans", "Helvetica Neue", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  .docs-header {
+    padding: 3rem 2rem 2rem;
+    border-bottom: 0.5px solid var(--border);
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  .docs-header h1 {
+    font-family: var(--font-mono);
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--brand);
+    letter-spacing: -0.02em;
+    margin-bottom: 0.25rem;
+  }
+
+  .docs-header p {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+  }
+
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    padding: 1rem 2rem;
+    max-width: 960px;
+    margin: 0 auto;
+    flex-wrap: wrap;
+  }
+
+  .breadcrumb a {
+    color: var(--brand);
+    text-decoration: none;
+  }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb span { color: var(--text-faint); }
+
+  .search-bar {
+    padding: 1rem 2rem 0;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  .search-bar input {
+    width: 100%;
+    max-width: 400px;
+    padding: 0.5rem 0.875rem;
+    font-size: 0.875rem;
+    font-family: inherit;
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .search-bar input:focus {
+    border-color: var(--brand);
+  }
+
+  .search-bar input::placeholder {
+    color: var(--text-faint);
+  }
+
+  .section {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem;
+  }
+
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .section-label::after {
+    content: "";
+    flex: 1;
+    height: 0.5px;
+    background: var(--border);
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .card {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.125rem;
+    text-decoration: none;
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--brand);
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .card:hover {
+    border-color: var(--border-hover);
+    background: var(--bg-secondary);
+    transform: translateY(-1px);
+  }
+
+  .card:hover::before { opacity: 1; }
+
+  .card.folder {
+    background: var(--brand-light);
+    border-color: rgba(29, 158, 117, 0.2);
+  }
+
+  .card.folder:hover {
+    background: var(--brand-light);
+    border-color: var(--brand);
+  }
+
+  .card-icon {
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+
+  .card-icon.doc { color: var(--brand); }
+  .card-icon.folder-icon { color: var(--brand-dark); }
+
+  .card-name {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text);
+    word-break: break-word;
+    line-height: 1.3;
+  }
+
+  .card.folder .card-name { color: var(--brand-dark); }
+
+  @media (prefers-color-scheme: dark) {
+    .card.folder .card-name { color: var(--brand-dark); }
+    .card-icon.folder-icon { color: var(--brand-dark); }
+  }
+
+  .card-meta {
+    font-size: 0.75rem;
+    color: var(--text-faint);
+    font-family: var(--font-mono);
+    margin-top: auto;
+  }
+
+  .card-description {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  .empty-state {
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-faint);
+    font-size: 0.875rem;
+    font-family: var(--font-mono);
+  }
+
+  .hidden { display: none !important; }
+</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+<div class="docs-header">
+  <h1>~/docs</h1>
+  <p>{{ site.pages | where_exp: "p", "p.path contains 'docs/'" | size }} documents indexed</p>
+</div>
+
+<div class="search-bar">
+  <input type="text" id="search" placeholder="filter files..." autocomplete="off" spellcheck="false" />
+</div>
+
+<div id="browser">
+
+{% comment %} Collect all docs pages, excluding index files {% endcomment %}
+{% assign all_docs = site.pages | where_exp: "p", "p.path contains 'docs/'" %}
+{% assign all_docs = all_docs | where_exp: "p", "p.name != 'index.html' and p.name != 'index.md'" %}
+
+{% comment %} Build unique directory list {% endcomment %}
+{% assign dirs_seen = "" %}
+
+{% for page in all_docs %}
+  {% assign parts = page.path | split: "/" %}
+  {% if parts.size > 2 %}
+    {% assign dir = parts | slice: 0, parts.size | join: "/" %}
+    {% assign parent = parts | slice: 0, parts.size | minus: 1 | join: "/" %}
+    {% unless dirs_seen contains parent %}
+      {% assign dirs_seen = dirs_seen | append: parent | append: "|" %}
+    {% endunless %}
+  {% endif %}
+{% endfor %}
+
+{% comment %} Group pages by immediate parent directory {% endcomment %}
+{% assign top_level_pages = "" | split: "" %}
+{% assign subdirs = "" | split: "" %}
+
+{% for page in all_docs %}
+  {% assign parts = page.path | split: "/" %}
+  {% if parts.size == 2 %}
+    {% assign top_level_pages = top_level_pages | push: page %}
+  {% endif %}
+{% endfor %}
+
+{% assign unique_subdirs = "" | split: "" %}
+{% for page in all_docs %}
+  {% assign parts = page.path | split: "/" %}
+  {% if parts.size > 2 %}
+    {% assign dir_name = parts[1] %}
+    {% unless unique_subdirs contains dir_name %}
+      {% assign unique_subdirs = unique_subdirs | push: dir_name %}
+    {% endunless %}
+  {% endif %}
+{% endfor %}
+
+{% if unique_subdirs.size > 0 %}
+<div class="section">
+  <div class="section-label">folders</div>
+  <div class="card-grid" id="folders-grid">
+    {% for dir in unique_subdirs | sort %}
+      {% assign dir_pages = all_docs | where_exp: "p", "p.path contains dir" %}
+      <a class="card folder" href="#dir-{{ dir | slugify }}" data-name="{{ dir }}" onclick="toggleDir('{{ dir | slugify }}')">
+        <div class="card-icon folder-icon">📁</div>
+        <div class="card-name">{{ dir }}/</div>
+        <div class="card-meta">{{ dir_pages | size }} files</div>
+      </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if top_level_pages.size > 0 %}
+<div class="section">
+  <div class="section-label">root files</div>
+  <div class="card-grid" id="root-grid">
+    {% for page in top_level_pages | sort: "title" %}
+      <a class="card" href="{{ page.url | relative_url }}" data-name="{{ page.title | default: page.name }}">
+        <div class="card-icon doc">📄</div>
+        <div class="card-name">{{ page.title | default: page.name }}</div>
+        {% if page.description %}
+          <div class="card-description">{{ page.description | truncate: 80 }}</div>
+        {% endif %}
+        {% if page.date %}
+          <div class="card-meta">{{ page.date | date: "%Y-%m-%d" }}</div>
+        {% endif %}
+      </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% for dir in unique_subdirs | sort %}
+  {% assign dir_pages = all_docs | where_exp: "p", "p.path contains dir" %}
+  {% assign dir_pages_sorted = dir_pages | sort: "title" %}
+  <div class="section dir-section" id="dir-{{ dir | slugify }}" style="display:none;">
+    <div class="section-label">
+      <a href="#" onclick="hideDir('{{ dir | slugify }}'); return false;" style="color: var(--brand); text-decoration: none; font-size: 0.7rem;">← back</a>
+      &nbsp;/&nbsp;{{ dir }}
+    </div>
+    <div class="card-grid">
+      {% for page in dir_pages_sorted %}
+        {% assign parts = page.path | split: "/" %}
+        <a class="card" href="{{ page.url | relative_url }}" data-name="{{ page.title | default: page.name }}">
+          <div class="card-icon doc">📄</div>
+          <div class="card-name">{{ page.title | default: parts.last }}</div>
+          {% if page.description %}
+            <div class="card-description">{{ page.description | truncate: 80 }}</div>
+          {% endif %}
+          {% if page.date %}
+            <div class="card-meta">{{ page.date | date: "%Y-%m-%d" }}</div>
+          {% endif %}
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+{% endfor %}
+
+</div>
+
+<div class="empty-state hidden" id="no-results">no matching files found</div>
+
+<script>
+  function toggleDir(slug) {
+    event.preventDefault();
+    document.querySelectorAll('.dir-section').forEach(s => s.style.display = 'none');
+    document.getElementById('dir-' + slug).style.display = 'block';
+    document.getElementById('folders-grid') && (document.getElementById('folders-grid').closest('.section').style.display = 'none');
+    document.getElementById('root-grid') && (document.getElementById('root-grid').closest('.section').style.display = 'none');
+  }
+
+  function hideDir(slug) {
+    document.getElementById('dir-' + slug).style.display = 'none';
+    document.querySelectorAll('.dir-section').forEach(s => s.style.display = 'none');
+    document.getElementById('folders-grid') && (document.getElementById('folders-grid').closest('.section').style.display = '');
+    document.getElementById('root-grid') && (document.getElementById('root-grid').closest('.section').style.display = '');
+  }
+
+  document.getElementById('search').addEventListener('input', function() {
+    const q = this.value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.card');
+    let visible = 0;
+
+    if (q === '') {
+      cards.forEach(c => c.classList.remove('hidden'));
+      document.querySelectorAll('.dir-section').forEach(s => s.style.display = 'none');
+      document.getElementById('folders-grid') && (document.getElementById('folders-grid').closest('.section').style.display = '');
+      document.getElementById('root-grid') && (document.getElementById('root-grid').closest('.section').style.display = '');
+      document.getElementById('no-results').classList.add('hidden');
+      return;
+    }
+
+    document.querySelectorAll('.dir-section').forEach(s => s.style.display = 'block');
+    document.getElementById('folders-grid') && (document.getElementById('folders-grid').closest('.section').style.display = 'block');
+
+    cards.forEach(c => {
+      const name = (c.dataset.name || '').toLowerCase();
+      const matches = name.includes(q);
+      c.classList.toggle('hidden', !matches);
+      if (matches) visible++;
+    });
+
+    document.querySelectorAll('.section').forEach(s => {
+      const anyVisible = [...s.querySelectorAll('.card')].some(c => !c.classList.contains('hidden'));
+      s.style.display = anyVisible ? '' : 'none';
+    });
+
+    document.getElementById('no-results').classList.toggle('hidden', visible > 0);
+  });
+</script>
