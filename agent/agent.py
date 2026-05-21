@@ -72,15 +72,6 @@ def agent_status():
     return jsonify({**_agent_state, "room": ROOM_NUMBER})
 
 
-# ── Perk-agent notification ────────────────────────────────────────────────────
-def _notify_perk_agent(path: str, payload: dict) -> None:
-    """Fire-and-forget notification to perk-agent; failures are logged but non-fatal."""
-    try:
-        requests.post(f"{PERK_AGENT_URL}{path}", json=payload, timeout=5)
-    except Exception as exc:
-        log.warning("perk-agent notification failed (%s): %s", path, exc)
-
-
 # ── Tool implementations ───────────────────────────────────────────────────────
 def _container_exec(container_name: str, cmd: list) -> str:
     """Run a command inside a named container via the Docker socket."""
@@ -545,16 +536,20 @@ def _run_agent_loop(trigger_lines: list[str]) -> None:
             history.append({"turn": turn, "tool": name, "input": args, "result": result})
             _agent_state.update({"current_turn": turn, "last_tool": name})
             if name != "escalate":
-                _notify_perk_agent(
-                    "/fault-update",
-                    {
-                        "room": ROOM_NUMBER,
-                        "timestamp": datetime.now(UTC).isoformat(),
-                        "turn": turn,
-                        "tool": name,
-                        "status": "in_progress",
-                    },
-                )
+                try:
+                    requests.post(
+                        f"{PERK_AGENT_URL}/fault-update",
+                        json={
+                            "room": ROOM_NUMBER,
+                            "turn": turn,
+                            "tool": name,
+                            "status": "in_progress",
+                            "timestamp": datetime.now(UTC).isoformat(),
+                        },
+                        timeout=3,
+                    )
+                except Exception:
+                    pass  # Non-critical — don't disrupt diagnosis
             ## Truncate long tool results to avoid gateway context limits (403)
             tool_content = str(result)
             if len(tool_content) > 1500:
@@ -616,18 +611,7 @@ def _poll_loop() -> None:
             _agent_busy.set()
             detected_at = datetime.now(UTC).isoformat()
             _agent_state.update({"status": "running", "fault_detected_at": detected_at})
-            ## Notify perk-agent immediately so tier-1 perks are issued without waiting for loop
-            _notify_perk_agent(
-                "/fault-event",
-                {
-                    "tier": 1,
-                    "status": "detected",
-                    "room": ROOM_NUMBER,
-                    "timestamp": detected_at,
-                    "consecutive_errors": consecutive,
-                    "summary": "Network disruption detected: consecutive guest request failures.",
-                },
-            )
+            ## tier-1 perks are fired inside _run_agent_loop via _notify_perk_agent(tier=1, ...)
             try:
                 _run_agent_loop(lines)
             finally:
