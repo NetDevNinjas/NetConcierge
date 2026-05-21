@@ -74,7 +74,16 @@ def tool_ping_host(host: str) -> str:
     return _container_exec("client", ["ping", "-c", "4", "-W", "3", host])
 
 
-def tool_curl_endpoint(url: str) -> str:
+## Named targets for curl_endpoint — keeps private IPs out of LLM conversation history
+_CURL_TARGETS = {
+    "gateway": "http://172.20.0.254",
+    "path-a": "http://172.21.0.10",
+    "path-b": "http://172.22.0.10",
+}
+
+
+def tool_curl_endpoint(target: str) -> str:
+    url = _CURL_TARGETS.get(target, _CURL_TARGETS["gateway"])
     return _container_exec(
         "client",
         [
@@ -100,9 +109,15 @@ def _summarize_router_state(data: dict) -> str:
         fwd = pdata.get("forward_rules", "")
         tc = pdata.get("tc_qdisc", "")
         ## Detect blocking rules without forwarding the raw rule text
-        has_block = "blocked: yes" if ("REJECT" in fwd or "DROP" in fwd or "DENY" in fwd) else "blocked: no"
+        has_block = (
+            "blocked: yes" if ("REJECT" in fwd or "DROP" in fwd or "DENY" in fwd) else "blocked: no"
+        )
         ## Detect traffic shaping without forwarding raw tc output
-        has_delay = "shaping: yes" if ("netem" in tc or "tbf" in tc or "delay" in tc or "loss" in tc) else "shaping: no"
+        has_delay = (
+            "shaping: yes"
+            if ("netem" in tc or "tbf" in tc or "delay" in tc or "loss" in tc)
+            else "shaping: no"
+        )
         lines.append(f"{pname}: {has_block}, {has_delay}")
     return "\n".join(lines)
 
@@ -196,13 +211,17 @@ TOOL_DEFINITIONS = [
         "type": "function",
         "function": {
             "name": "curl_endpoint",
-            "description": "HTTP GET a URL from the client container; returns status code and latency.",
+            "description": "Test HTTP connectivity from the client; returns status code and latency.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "url": {"type": "string", "description": "URL to curl"},
+                    "target": {
+                        "type": "string",
+                        "enum": ["gateway", "path-a", "path-b"],
+                        "description": "gateway = end-to-end test through the router; path-a or path-b = specific backend",
+                    },
                 },
-                "required": ["url"],
+                "required": ["target"],
             },
         },
     },
@@ -229,9 +248,8 @@ TOOL_DEFINITIONS = [
         "function": {
             "name": "switch_active_path",
             "description": (
-                "Switch the active backend to path 'a' (172.21.0.10) or "
-                "path 'b' (172.22.0.10). Use when the active path is degraded "
-                "and the alternate path appears healthy."
+                "Switch the active backend to path 'a' or path 'b'. "
+                "Use when the active path is degraded and the alternate path appears healthy."
             ),
             "parameters": {
                 "type": "object",
@@ -426,7 +444,7 @@ def _run_agent_loop(trigger_lines: list[str]) -> None:
             if name == "ping_host":
                 result = tool_ping_host(args.get("host", ""))
             elif name == "curl_endpoint":
-                result = tool_curl_endpoint(args.get("url", ""))
+                result = tool_curl_endpoint(args.get("target", "gateway"))
             elif name == "get_router_state":
                 result = tool_get_router_state(args.get("path", "all"))
             elif name == "switch_active_path":
