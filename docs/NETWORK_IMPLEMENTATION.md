@@ -435,13 +435,13 @@ echo "Fault state cleared."
 
 ### Phase 5 Tests
 
-- [ ] `./scripts/inject-fault.sh --path a --type latency --value "500ms 100ms"` exits 0
-- [ ] `docker logs client --tail 5` shows latency values above 500ms (or ERR if latency > 5s timeout)
-- [ ] `./scripts/restore.sh` exits 0 and client log returns to `OK` within ~10s
-- [ ] `./scripts/inject-fault.sh --path a --type blackhole` causes client log to switch to `ERR | HTTP 000`
-- [ ] `./scripts/restore.sh` clears the blackhole and client recovers
-- [ ] `./scripts/inject-fault.sh --path both --type blackhole` causes sustained errors (dual-fail scenario)
-- [ ] `./scripts/restore.sh` after dual-fail restores connectivity
+- [x] `./scripts/inject-fault.sh --path a --type latency --value "500ms 100ms"` exits 0
+- [x] `docker logs client --tail 5` shows latency values above 500ms (or ERR if latency > 5s timeout)
+- [x] `./scripts/restore.sh` exits 0 and client log returns to `OK` within ~10s
+- [x] `./scripts/inject-fault.sh --path a --type blackhole` causes client log to switch to `ERR | HTTP 000`
+- [x] `./scripts/restore.sh` clears the blackhole and client recovers
+- [x] `./scripts/inject-fault.sh --path both --type blackhole` causes sustained errors (dual-fail scenario)
+- [x] `./scripts/restore.sh` after dual-fail restores connectivity
 
 ---
 

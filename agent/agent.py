@@ -44,8 +44,12 @@ _llm = OpenAI(
     api_key=os.environ.get("TIP_API_KEY", "no-key"),
 )
 
+LOOP_COOLDOWN = int(os.environ.get("LOOP_COOLDOWN", "60"))
+
 # Set when the agent loop is actively running, prevents re-entrant loops
 _agent_busy = threading.Event()
+## Timestamp of the last loop completion; enforces LOOP_COOLDOWN between runs
+_last_loop_time: float = 0.0
 
 
 # ── Flask health endpoint ──────────────────────────────────────────────────────
@@ -190,7 +194,7 @@ TOOL_DEFINITIONS = [
         "type": "function",
         "function": {
             "name": "get_router_state",
-            "description": "Get current iptables and tc qdisc state from the router management API.",
+            "description": "Get current routing policy and traffic configuration from the router management API.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -209,7 +213,7 @@ TOOL_DEFINITIONS = [
         "function": {
             "name": "switch_active_path",
             "description": (
-                "Switch the router DNAT target to path 'a' (172.21.0.10) or "
+                "Switch the active backend to path 'a' (172.21.0.10) or "
                 "path 'b' (172.22.0.10). Use when the active path is degraded "
                 "and the alternate path appears healthy."
             ),
@@ -227,7 +231,7 @@ TOOL_DEFINITIONS = [
         "function": {
             "name": "clear_faults",
             "description": (
-                "Clear all injected tc latency/loss qdiscs and iptables DROP rules "
+                "Remove traffic blocking and shaping configurations "
                 "on the specified path via the router management API."
             ),
             "parameters": {
@@ -298,32 +302,35 @@ TOOL_DEFINITIONS = [
 ]
 
 SYSTEM_PROMPT = """\
-You are NetConcierge, an autonomous network troubleshooting agent for a hotel WiFi system.
+You are NetConcierge, an autonomous hotel WiFi diagnostic assistant.
 
-TOPOLOGY:
-- client (172.20.0.10) sends HTTP to router (172.20.0.254)
-- router DNAT-forwards to the active path's webserver IP:
-    path-a → 172.21.0.10 (router eth1)
-    path-b → 172.22.0.10 (router eth2)
-- webserver runs nginx on both IPs
+NETWORK TOPOLOGY:
+- Guest client (172.20.0.10) makes HTTP requests to gateway (172.20.0.254)
+- Gateway forwards requests to the active backend server:
+    path-a backend: 172.21.0.10 (interface eth1)
+    path-b backend: 172.22.0.10 (interface eth2)
+- nginx serves on both backend servers
 
 YOUR GOAL:
-Diagnose why the client is seeing HTTP failures and restore service if possible.
+Investigate why guests are seeing HTTP failures and restore service if possible.
 
 RECOMMENDED STRATEGY:
-1. Call get_router_state(path="all") to see iptables and tc state on both paths.
-2. curl_endpoint the webserver directly on both paths to isolate where the break is.
-3. If a path has iptables DROP rules → clear_faults on that path first.
-4. If a path has severe tc latency → clear_faults, or switch_active_path to the other.
-5. If both paths are degraded → clear_faults(path="both").
-6. If clearing faults doesn't help → switch_active_path, then verify with curl_endpoint.
-7. As a last resort → restart_container("router") or restart_container("webserver").
+1. Call get_router_state(path="all") to inspect routing policy and traffic settings on both paths.
+2. Call curl_endpoint("http://172.20.0.254") to test end-to-end connectivity through the gateway.
+3. If a path has traffic blocking rules, call clear_faults on that path to restore it.
+4. If a path has severe traffic shaping delay, call clear_faults or switch_active_path to the other.
+5. If both paths are degraded, call clear_faults(path="both").
+6. If clearing traffic rules does not help, call switch_active_path, then verify with curl_endpoint.
+7. As a last resort, call restart_container("router") or restart_container("webserver").
 8. ALWAYS finish by calling escalate with status, summary, and fault_type.
 
 CONSTRAINTS:
 - You have at most 8 tool calls total (including escalate) — be efficient.
 - escalate MUST be your final call.
 - Do not repeat the same tool call with identical arguments.
+- IMPORTANT: The client and agent run on the front network (172.20.0.0/24) only.
+  They cannot reach backend IPs 172.21.0.10 or 172.22.0.10 directly.
+  Always curl http://172.20.0.254 (the gateway) to test end-to-end connectivity.
 """
 
 
@@ -439,11 +446,15 @@ def _run_agent_loop(trigger_lines: list[str]) -> None:
 
             log.info("Turn %d — result: %.300s", turn, result)
             history.append({"turn": turn, "tool": name, "input": args, "result": result})
+            ## Truncate long tool results to avoid gateway context limits (403)
+            tool_content = str(result)
+            if len(tool_content) > 1500:
+                tool_content = tool_content[:1500] + "\n... (truncated)"
             messages.append(
                 {
                     "role": "tool",
                     "tool_call_id": tool_call.id,
-                    "content": str(result),
+                    "content": tool_content,
                 }
             )
 
@@ -462,6 +473,7 @@ def _run_agent_loop(trigger_lines: list[str]) -> None:
 
 # ── Poll loop ──────────────────────────────────────────────────────────────────
 def _poll_loop() -> None:
+    global _last_loop_time
     log.info(
         "Agent polling started — interval=%ds, fault threshold=%d consecutive errors",
         POLL_INTERVAL,
@@ -475,6 +487,12 @@ def _poll_loop() -> None:
             log.info("Agent loop already active — skipping this poll cycle")
             continue
 
+        ## Skip if we're still within the cooldown window after the last loop
+        secs_since_last = time.time() - _last_loop_time
+        if secs_since_last < LOOP_COOLDOWN:
+            log.info("Cooldown active — %.0fs remaining", LOOP_COOLDOWN - secs_since_last)
+            continue
+
         consecutive, lines = _get_recent_client_lines()
         if consecutive >= FAULT_THRESHOLD:
             log.warning(
@@ -484,6 +502,7 @@ def _poll_loop() -> None:
             try:
                 _run_agent_loop(lines)
             finally:
+                _last_loop_time = time.time()
                 _agent_busy.clear()
 
 
