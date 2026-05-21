@@ -471,6 +471,7 @@ def _run_agent_loop(trigger_lines: list[str]) -> None:
 
 # ── Poll loop ──────────────────────────────────────────────────────────────────
 def _poll_loop() -> None:
+    global _last_loop_time
     log.info(
         "Agent polling started — interval=%ds, fault threshold=%d consecutive errors",
         POLL_INTERVAL,
@@ -499,7 +500,6 @@ def _poll_loop() -> None:
             try:
                 _run_agent_loop(lines)
             finally:
-                global _last_loop_time
                 _last_loop_time = time.time()
                 _agent_busy.clear()
 
