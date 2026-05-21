@@ -1,0 +1,10 @@
+---
+title: Commands
+version: 0.1
+---
+
+# Commands to make changes to the system
+
+```bash
+ssh ubuntu@netconcierge "cd /opt/netconcierge && sudo git pull origin main && sudo docker compose build agent perk-agent && sudo docker compose up -d agent perk-agent"
+```

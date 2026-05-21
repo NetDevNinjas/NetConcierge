@@ -45,17 +45,39 @@ _llm = OpenAI(
 )
 
 LOOP_COOLDOWN = int(os.environ.get("LOOP_COOLDOWN", "60"))
+PERK_AGENT_URL = os.environ.get("PERK_AGENT_URL", "http://perk-agent:8081")
 
 # Set when the agent loop is actively running, prevents re-entrant loops
 _agent_busy = threading.Event()
 ## Timestamp of the last loop completion; enforces LOOP_COOLDOWN between runs
 _last_loop_time: float = 0.0
+## Tracks current agent state for the /status endpoint and perk-agent polling
+_agent_state: dict = {
+    "status": "idle",
+    "fault_detected_at": None,
+    "current_turn": 0,
+    "last_tool": None,
+}
 
 
-# ── Flask health endpoint ──────────────────────────────────────────────────────
+# ── Flask endpoints ──────────────────────────────────────────────────────────
 @app.get("/health")
 def health():
     return jsonify({"status": "ok", "busy": _agent_busy.is_set()})
+
+
+@app.get("/status")
+def agent_status():
+    return jsonify({**_agent_state, "room": ROOM_NUMBER})
+
+
+# ── Perk-agent notification ────────────────────────────────────────────────────
+def _notify_perk_agent(path: str, payload: dict) -> None:
+    """Fire-and-forget notification to perk-agent; failures are logged but non-fatal."""
+    try:
+        requests.post(f"{PERK_AGENT_URL}{path}", json=payload, timeout=5)
+    except Exception as exc:
+        log.warning("perk-agent notification failed (%s): %s", path, exc)
 
 
 # ── Tool implementations ───────────────────────────────────────────────────────
@@ -165,8 +187,10 @@ def tool_escalate(
     resolved_by: str | None = None,
     turns_used: int = 0,
 ) -> str:
+    ## tier=2 triggers LLM-based elevated compensation; tier=1 is the fixed immediate perk
     payload = {
         "status": status,
+        "tier": 2 if status == "escalated" else 1,
         "fault_type": fault_type,
         "active_path": active_path,
         "resolved_by": resolved_by,
@@ -495,6 +519,18 @@ def _run_agent_loop(trigger_lines: list[str]) -> None:
 
             log.info("Turn %d — result: %.300s", turn, result)
             history.append({"turn": turn, "tool": name, "input": args, "result": result})
+            _agent_state.update({"current_turn": turn, "last_tool": name})
+            if name != "escalate":
+                _notify_perk_agent(
+                    "/fault-update",
+                    {
+                        "room": ROOM_NUMBER,
+                        "timestamp": datetime.now(UTC).isoformat(),
+                        "turn": turn,
+                        "tool": name,
+                        "status": "in_progress",
+                    },
+                )
             ## Truncate long tool results to avoid gateway context limits (403)
             tool_content = str(result)
             if len(tool_content) > 1500:
@@ -541,6 +577,8 @@ def _poll_loop() -> None:
         if secs_since_last < LOOP_COOLDOWN:
             log.info("Cooldown active — %.0fs remaining", LOOP_COOLDOWN - secs_since_last)
             continue
+        if _agent_state["status"] == "cooldown":
+            _agent_state["status"] = "idle"
 
         consecutive, lines = _get_recent_client_lines()
         if consecutive >= FAULT_THRESHOLD:
@@ -548,10 +586,25 @@ def _poll_loop() -> None:
                 "Fault detected: %d consecutive ERR lines — starting agent loop", consecutive
             )
             _agent_busy.set()
+            detected_at = datetime.now(UTC).isoformat()
+            _agent_state.update({"status": "running", "fault_detected_at": detected_at})
+            ## Notify perk-agent immediately so tier-1 perks are issued without waiting for loop
+            _notify_perk_agent(
+                "/fault-event",
+                {
+                    "tier": 1,
+                    "status": "detected",
+                    "room": ROOM_NUMBER,
+                    "timestamp": detected_at,
+                    "consecutive_errors": consecutive,
+                    "summary": "Network disruption detected: consecutive guest request failures.",
+                },
+            )
             try:
                 _run_agent_loop(lines)
             finally:
                 _last_loop_time = time.time()
+                _agent_state["status"] = "cooldown"
                 _agent_busy.clear()
 
 
