@@ -25,6 +25,7 @@ LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "https://litellm-api.up.railway.ap
 LLM_MODEL = os.environ.get("LLM_MODEL", "claude-3-5-haiku-20241022")
 POLL_INTERVAL = int(os.environ.get("POLL_INTERVAL", "10"))
 FAULT_THRESHOLD = int(os.environ.get("FAULT_THRESHOLD", "3"))
+ROOM_NUMBER = os.environ.get("ROOM_NUMBER", "412")
 MAX_TURNS = 8
 
 logging.basicConfig(
@@ -135,6 +136,7 @@ def tool_escalate(
         "active_path": active_path,
         "resolved_by": resolved_by,
         "turns_used": turns_used,
+        "room": ROOM_NUMBER,
         "history": history,
         "summary": summary,
         "timestamp": datetime.now(UTC).isoformat(),

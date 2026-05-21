@@ -83,11 +83,33 @@ services:
       - .env
     environment:
       - ROUTER_API=http://172.20.0.254:5000
+      - WEBHOOK_URL=http://perk-agent:8081/fault-event
+      - ROOM_NUMBER=412
     ports:
       - "8080:8080"
     depends_on:
       router:
         condition: service_healthy
+      perk-agent:
+        condition: service_healthy
+
+  perk-agent:
+    build: ./perk_agent
+    container_name: perk-agent
+    networks:
+      - front-net
+    env_file:
+      - .env
+    ports:
+      - "8081:8081"
+    depends_on:
+      router:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
 
   uptime-kuma:
     image: louislam/uptime-kuma:1
