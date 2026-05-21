@@ -25,6 +25,7 @@ from openai import OpenAI
 LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "https://litellm-api.up.railway.app/v1")
 LLM_MODEL = os.environ.get("LLM_MODEL", "claude-3-5-haiku-20241022")
 CUSTOMER_PROFILE_PATH = os.environ.get("CUSTOMER_PROFILE_PATH", "/app/customer_profile.txt")
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "")
 # FORWARD_URL = os.environ.get("FORWARD_URL", "http://localhost:9000/recommendations")
 
 logging.basicConfig(
@@ -104,6 +105,22 @@ Respond with a JSON object:
 
 
 # ── Helper ─────────────────────────────────────────────────────────────────────
+def _emit_event(event_type: str, message: str, data: dict | None = None) -> None:
+    """Push an event to the frontend dashboard (best-effort)."""
+    if not FRONTEND_URL:
+        return
+    payload = {
+        "source": "perk-agent",
+        "type": event_type,
+        "message": message,
+        "data": data,
+    }
+    try:
+        requests.post(FRONTEND_URL, json=payload, timeout=3)
+    except Exception:
+        pass
+
+
 def _load_customer_profile() -> str:
     """Load the customer profile text file."""
     try:
@@ -196,9 +213,16 @@ def fault_event():
     )
 
     if tier == 2:
+        _emit_event("tier2", f"🏆 Escalation received for Room {room} — generating elevated perks via LLM...")
         result = _build_tier_2_response(data)
+        _emit_event("tier2", f"Tier 2 perks issued for Room {room}", data=result.get("recommendation"))
     else:
         result = _build_tier_1_response(room)
+        _emit_event(
+            "tier1",
+            f"🎁 Tier 1 perks issued for Room {room}: WiFi refund + complimentary drink/appetizer",
+            data={"perks": result.get("perks")},
+        )
 
     log.info("═" * 60)
     log.info("TIER %d PERKS for Room %s", tier, room)

@@ -26,6 +26,7 @@ LLM_MODEL = os.environ.get("LLM_MODEL", "claude-3-5-haiku-20241022")
 POLL_INTERVAL = int(os.environ.get("POLL_INTERVAL", "10"))
 FAULT_THRESHOLD = int(os.environ.get("FAULT_THRESHOLD", "3"))
 ROOM_NUMBER = os.environ.get("ROOM_NUMBER", "412")
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "")
 MAX_TURNS = 8
 
 logging.basicConfig(
@@ -389,6 +390,22 @@ def _get_recent_client_lines(tail: int = 20) -> tuple[int, list[str]]:
 
 
 # ── Agent tool-use loop ────────────────────────────────────────────────────────
+def _emit_event(event_type: str, message: str, data: dict | None = None) -> None:
+    """Push an event to the frontend dashboard (best-effort)."""
+    if not FRONTEND_URL:
+        return
+    payload = {
+        "source": "network-agent",
+        "type": event_type,
+        "message": message,
+        "data": data,
+    }
+    try:
+        requests.post(FRONTEND_URL, json=payload, timeout=3)
+    except Exception:
+        pass  # Non-critical — don't disrupt agent flow
+
+
 def _notify_perk_agent(tier: int, **kwargs) -> None:
     """Fire a perk-agent notification (best-effort, non-blocking to diagnosis)."""
     payload = {"tier": tier, "room": ROOM_NUMBER, **kwargs}
@@ -401,6 +418,7 @@ def _notify_perk_agent(tier: int, **kwargs) -> None:
 
 def _run_agent_loop(trigger_lines: list[str]) -> None:
     log.info("Agent loop started")
+    _emit_event("fault_detected", "⚠️ Network fault detected — starting diagnosis loop")
 
     # ── Tier 1: Immediate perks (WiFi refund + bar item) ───────────────────
     _notify_perk_agent(tier=1, fault_type="detected", summary="Network fault detected")
@@ -464,6 +482,7 @@ def _run_agent_loop(trigger_lines: list[str]) -> None:
                 args = {}
 
             log.info("Turn %d — %s(%s)", turn, name, json.dumps(args))
+            _emit_event("tool_call", f"Turn {turn}: calling {name}({json.dumps(args)})")
 
             # Dispatch
             if name == "ping_host":
@@ -494,6 +513,11 @@ def _run_agent_loop(trigger_lines: list[str]) -> None:
                 result = f"Unknown tool: {name}"
 
             log.info("Turn %d — result: %.300s", turn, result)
+            _emit_event(
+                "escalation" if name == "escalate" else "tool_result",
+                f"Turn {turn} result: {str(result)[:300]}",
+                {"tool": name, "turn": turn},
+            )
             history.append({"turn": turn, "tool": name, "input": args, "result": result})
             ## Truncate long tool results to avoid gateway context limits (403)
             tool_content = str(result)
@@ -518,6 +542,10 @@ def _run_agent_loop(trigger_lines: list[str]) -> None:
         )
 
     log.info("Agent loop complete — %d turn(s) used", turn)
+    _emit_event(
+        "resolved" if escalated else "info",
+        f"Agent loop complete — {turn} turn(s) used",
+    )
 
 
 # ── Poll loop ──────────────────────────────────────────────────────────────────

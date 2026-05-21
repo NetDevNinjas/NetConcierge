@@ -86,6 +86,7 @@ services:
       - ROUTER_API=http://172.20.0.254:5000
       - WEBHOOK_URL=http://perk-agent:8081/fault-event
       - ROOM_NUMBER=412
+      - FRONTEND_URL=http://frontend:3000/api/events
     ports:
       - "8080:8080"
     depends_on:
@@ -101,6 +102,8 @@ services:
       - front-net
     env_file:
       - .env
+    environment:
+      - FRONTEND_URL=http://frontend:3000/api/events
     ports:
       - "8081:8081"
     depends_on:
@@ -111,6 +114,19 @@ services:
       interval: 5s
       timeout: 3s
       retries: 3
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    networks:
+      - front-net
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   uptime-kuma:
     image: louislam/uptime-kuma:1
