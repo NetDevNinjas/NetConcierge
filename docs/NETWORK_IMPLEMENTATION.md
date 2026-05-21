@@ -827,13 +827,24 @@ NetConcierge/
 │   ├── Dockerfile
 │   ├── requirements.txt
 │   └── agent.py
+├── perk_agent/
+│   ├── Dockerfile                # Includes curl for healthcheck
+│   ├── requirements.txt
+│   ├── perk_agent.py
+│   └── customer_profile.txt      # Guest loyalty profile fed to tier-2 LLM
+├── frontend/
+│   ├── Dockerfile
+│   └── ...                       # React dashboard with real-time event stream
 ├── scripts/
-│   ├── inject-fault.sh
-│   └── restore.sh
+│   ├── inject-fault.sh           # Injects latency / loss / blackhole faults
+│   ├── restore.sh                # Clears all injected faults
+│   └── demo.sh                   # Automated 4-scenario demo walkthrough
 ├── monitoring/
 │   └── uptime-kuma/              # Persistent volume mount point
 └── docs/
     ├── claude-initial-conversation.md
+    ├── communication.md          # Agent ↔ perk-agent webhook contract (v0.2)
+    ├── escalation.md             # Original escalation spec
     └── NETWORK_IMPLEMENTATION.md  # This file
 ```
 
