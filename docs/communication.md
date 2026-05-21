@@ -5,6 +5,17 @@ version: 0.1
 
 # NetConcierge Agent Communication
 
+## netconcierge-agent ↔ perk-agent: Interface Map
+
+**Health Check (perk-agent → itself, polled by Docker)**
+
+```bash
+GET http://perk-agent:8081/health
+Response: {"status": "ok", "service": "perk-agent"}
+```
+
+This is also what the agent's depends_on: condition: service_healthy waits for before starting.
+
 ## Fault Event Webhook (netconcierge-agent → perk-agent)
 
 Trigger: When the LLM calls the escalate tool as its final action.
