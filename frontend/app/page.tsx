@@ -29,10 +29,41 @@ const TYPE_ICONS: Record<string, string> = {
   clear: "🗑️",
 };
 
+function EventCard({ event }: { event: AgentEvent }) {
+  return (
+    <div style={styles.eventCard}>
+      <div style={styles.eventHeader}>
+        <span style={styles.icon}>{TYPE_ICONS[event.type] || "•"}</span>
+        <span style={styles.eventType}>{event.type}</span>
+        <span style={styles.timestamp}>
+          {new Date(event.timestamp).toLocaleTimeString()}
+        </span>
+      </div>
+      <div style={styles.message}>{event.message}</div>
+      {event.data && (
+        <pre style={styles.dataBlock}>
+          {JSON.stringify(event.data, null, 2)}
+        </pre>
+      )}
+    </div>
+  );
+}
+
+function EmptyState({ label }: { label: string }) {
+  return (
+    <div style={styles.empty}>
+      <p style={{ color: "#8b949e", fontSize: "0.85rem" }}>
+        Waiting for {label} activity...
+      </p>
+    </div>
+  );
+}
+
 export default function Home() {
   const [events, setEvents] = useState<AgentEvent[]>([]);
   const [connected, setConnected] = useState(false);
-  const feedRef = useRef<HTMLDivElement>(null);
+  const networkRef = useRef<HTMLDivElement>(null);
+  const perkRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const evtSource = new EventSource("/api/events");
@@ -56,11 +87,24 @@ export default function Home() {
     return () => evtSource.close();
   }, []);
 
+  const networkEvents = events.filter(
+    (e) => e.source === "network-agent" || e.source === "system"
+  );
+  const perkEvents = events.filter(
+    (e) => e.source === "perk-agent" || e.source === "system"
+  );
+
   useEffect(() => {
-    if (feedRef.current) {
-      feedRef.current.scrollTop = feedRef.current.scrollHeight;
+    if (networkRef.current) {
+      networkRef.current.scrollTop = networkRef.current.scrollHeight;
     }
-  }, [events]);
+  }, [networkEvents.length]);
+
+  useEffect(() => {
+    if (perkRef.current) {
+      perkRef.current.scrollTop = perkRef.current.scrollHeight;
+    }
+  }, [perkEvents.length]);
 
   return (
     <div style={styles.container}>
@@ -86,46 +130,45 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Event Feed */}
-      <div ref={feedRef} style={styles.feed}>
-        {events.length === 0 && (
-          <div style={styles.empty}>
-            <p style={{ fontSize: "1.2rem", marginBottom: "0.5rem" }}>
-              Waiting for agent activity...
-            </p>
-            <p style={{ color: "#8b949e", fontSize: "0.85rem" }}>
-              Events will appear here when the network or perk agent takes
-              action.
-            </p>
+      {/* Two-column layout */}
+      <div style={styles.columns}>
+        {/* Network Agent Column */}
+        <div style={styles.column}>
+          <div style={{ ...styles.columnHeader, borderColor: "#58a6ff" }}>
+            <span style={{ color: "#58a6ff", fontWeight: 600 }}>
+              🌐 Network Agent
+            </span>
+            <span style={styles.eventCount}>{networkEvents.length}</span>
           </div>
-        )}
-        {events.map((event) => (
-          <div key={event.id} style={styles.eventCard}>
-            <div style={styles.eventHeader}>
-              <span style={styles.icon}>
-                {TYPE_ICONS[event.type] || "•"}
-              </span>
-              <span
-                style={{
-                  ...styles.source,
-                  color: SOURCE_COLORS[event.source] || "#8b949e",
-                }}
-              >
-                {event.source}
-              </span>
-              <span style={styles.eventType}>{event.type}</span>
-              <span style={styles.timestamp}>
-                {new Date(event.timestamp).toLocaleTimeString()}
-              </span>
-            </div>
-            <div style={styles.message}>{event.message}</div>
-            {event.data && (
-              <pre style={styles.dataBlock}>
-                {JSON.stringify(event.data, null, 2)}
-              </pre>
+          <div ref={networkRef} style={styles.feed}>
+            {networkEvents.length === 0 ? (
+              <EmptyState label="network agent" />
+            ) : (
+              networkEvents.map((event) => (
+                <EventCard key={event.id} event={event} />
+              ))
             )}
           </div>
-        ))}
+        </div>
+
+        {/* Perk Agent Column */}
+        <div style={styles.column}>
+          <div style={{ ...styles.columnHeader, borderColor: "#bc8cff" }}>
+            <span style={{ color: "#bc8cff", fontWeight: 600 }}>
+              🎁 Perk Agent
+            </span>
+            <span style={styles.eventCount}>{perkEvents.length}</span>
+          </div>
+          <div ref={perkRef} style={styles.feed}>
+            {perkEvents.length === 0 ? (
+              <EmptyState label="perk agent" />
+            ) : (
+              perkEvents.map((event) => (
+                <EventCard key={event.id} event={event} />
+              ))
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -136,9 +179,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     flexDirection: "column",
     height: "100vh",
-    maxWidth: "900px",
-    margin: "0 auto",
-    padding: "0 1rem",
+    padding: "0 1.5rem",
   },
   header: {
     display: "flex",
@@ -176,69 +217,96 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: "50%",
     display: "inline-block",
   },
+  columns: {
+    display: "flex",
+    flex: 1,
+    gap: "1rem",
+    paddingTop: "1rem",
+    minHeight: 0,
+  },
+  column: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    minHeight: 0,
+    background: "#0d1117",
+    border: "1px solid #30363d",
+    borderRadius: "8px",
+    overflow: "hidden",
+  },
+  columnHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "0.75rem 1rem",
+    background: "#161b22",
+    borderBottom: "2px solid",
+    fontSize: "0.85rem",
+  },
+  eventCount: {
+    fontSize: "0.7rem",
+    color: "#8b949e",
+    background: "#1c2128",
+    padding: "2px 8px",
+    borderRadius: "10px",
+    border: "1px solid #30363d",
+  },
   feed: {
     flex: 1,
     overflowY: "auto",
-    padding: "1rem 0",
+    padding: "0.75rem",
     display: "flex",
     flexDirection: "column",
-    gap: "0.75rem",
+    gap: "0.5rem",
   },
   empty: {
     textAlign: "center" as const,
-    marginTop: "4rem",
+    marginTop: "3rem",
     color: "#8b949e",
   },
   eventCard: {
     background: "#161b22",
     border: "1px solid #30363d",
-    borderRadius: "8px",
-    padding: "0.75rem 1rem",
-    animation: "fadeIn 0.3s ease",
+    borderRadius: "6px",
+    padding: "0.6rem 0.75rem",
   },
   eventHeader: {
     display: "flex",
     alignItems: "center",
-    gap: "0.5rem",
-    marginBottom: "0.4rem",
+    gap: "0.4rem",
+    marginBottom: "0.3rem",
   },
   icon: {
-    fontSize: "1rem",
-  },
-  source: {
-    fontWeight: 600,
-    fontSize: "0.8rem",
-    textTransform: "uppercase" as const,
-    letterSpacing: "0.5px",
+    fontSize: "0.9rem",
   },
   eventType: {
-    fontSize: "0.75rem",
+    fontSize: "0.7rem",
     color: "#8b949e",
     background: "#1c2128",
-    padding: "2px 6px",
-    borderRadius: "4px",
+    padding: "1px 5px",
+    borderRadius: "3px",
     border: "1px solid #30363d",
   },
   timestamp: {
     marginLeft: "auto",
-    fontSize: "0.75rem",
+    fontSize: "0.7rem",
     color: "#8b949e",
   },
   message: {
-    fontSize: "0.9rem",
+    fontSize: "0.85rem",
     lineHeight: 1.5,
     color: "#e6edf3",
     whiteSpace: "pre-wrap" as const,
   },
   dataBlock: {
-    marginTop: "0.5rem",
-    padding: "0.5rem",
+    marginTop: "0.4rem",
+    padding: "0.4rem",
     background: "#0d1117",
     border: "1px solid #30363d",
     borderRadius: "4px",
-    fontSize: "0.75rem",
+    fontSize: "0.7rem",
     color: "#8b949e",
     overflow: "auto",
-    maxHeight: "200px",
+    maxHeight: "150px",
   },
 };

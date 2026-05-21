@@ -281,6 +281,11 @@ def fault_event():
                 "turn_count": 0,
             }
         result = _build_tier_1_response(room)
+        _emit_event(
+            "tier1",
+            f"🎁 Tier 1 perks issued for Room {room}: WiFi refund + complimentary drink/appetizer",
+            data={"perks": result.get("perks")},
+        )
     elif status == "resolved":
         ## Close fault tracking and log resolution — tier-1 perks were already issued
         with _faults_lock:
@@ -291,6 +296,7 @@ def fault_event():
             "room": room,
             "message": "Issue resolved — tier-1 perks already issued, no further action.",
         }
+        _emit_event("resolved", f"✅ Fault resolved for Room {room} — no additional perks needed")
     elif tier == 2:
         _emit_event("tier2", f"🏆 Escalation received for Room {room} — generating elevated perks via LLM...")
         ## Escalated and unresolved — close tracking and issue elevated LLM perks
