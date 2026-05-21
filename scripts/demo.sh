@@ -14,7 +14,7 @@ set -euo pipefail
 DOCKER="${DOCKER:-docker}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-AGENT_HOST="${AGENT_HOST:-localhost:8081}"
+AGENT_HOST="${AGENT_HOST:-localhost:8080}"
 PERK_HOST="${PERK_HOST:-localhost:8081}"
 
 # ── Colours ────────────────────────────────────────────────────────────────────
@@ -85,7 +85,11 @@ show_logs() {
     divider
     echo -e "${CYAN}  ${BOLD}${service}${RESET}${CYAN} logs (last ~${elapsed}s)${RESET}"
     divider
-    $DOCKER logs "$service" --since "${elapsed}s" 2>&1 | tail -n "$tail"
+    ## Filter out chatty Flask access log lines for health/status polling
+    $DOCKER logs "$service" --since "${elapsed}s" 2>&1 \
+        | grep -v '"GET /health ' \
+        | grep -v '"GET /status ' \
+        | tail -n "$tail"
     divider
 }
 
