@@ -760,35 +760,47 @@ This is the end-to-end validation. Run this before the presentation.
 - [ ] All containers are `healthy`: `docker compose ps`
 - [ ] Uptime Kuma shows all green
 - [ ] `docker logs client --tail 5` shows all `OK` lines
-- [ ] Teammate's guest-facing LLM service is running and the `WEBHOOK_URL` is reachable
+- [ ] `curl http://localhost:8080/health` returns `{"status": "ok", "busy": false}`
+- [ ] `curl http://localhost:8081/health` returns `{"status": "ok", "service": "perk-agent"}`
 
-### Scenario 1 — Single path degraded (agent self-heals)
+### Scenario 1 — Single path failure (agent self-heals, tier-1 perks)
 
-- [ ] Run: `./scripts/inject-fault.sh --path a --type blackhole`
-- [ ] Uptime Kuma "Path A → Webserver" turns red
-- [ ] Agent detects failure within 30s (check `docker logs agent`)
-- [ ] Agent switches to path-b or clears fault (tool calls visible in logs)
-- [ ] `docker logs client` returns to `OK` without manual intervention
-- [ ] Webhook received by teammate's service with `status: resolved`
+- [ ] Run: `DOCKER='sudo docker' bash scripts/inject-fault.sh --path a --type blackhole`
+- [ ] Within 10s: `docker logs agent` shows fault detection and loop start
+- [ ] `docker logs perk-agent` shows `TIER 1 PERKS` block (WiFi refund + bar item) — issued at detection, before resolution
+- [ ] Agent calls `clear_faults` or `switch_active_path`; client recovers (`OK` lines return)
+- [ ] Agent calls `clear` (not `escalate`) — logs show `Signal cleared`
+- [ ] `docker logs perk-agent` shows `status=resolved` logged; no tier-2 block
 - [ ] Uptime Kuma returns to all-green
+- [ ] Run: `bash scripts/restore.sh` as cleanup
 
-### Scenario 2 — Latency degradation (partial fault)
+### Scenario 2 — Total failure / escalation (tier-2 LLM perks)
 
-- [ ] Run: `./scripts/inject-fault.sh --path a --type latency --value "2000ms 500ms"`
-- [ ] `docker logs client` shows high latency values (or intermittent `ERR` on timeout)
-- [ ] Agent detects degradation and clears the tc fault
-- [ ] Client latency returns to normal
-- [ ] Run `./scripts/restore.sh` as cleanup if agent doesn't catch it
-
-### Scenario 3 — Total failure / escalation
-
-- [ ] Run: `./scripts/inject-fault.sh --path both --type blackhole`
+- [ ] Run: `DOCKER='sudo docker' bash scripts/inject-fault.sh --path both --type blackhole`
 - [ ] `docker logs client` shows sustained `ERR | HTTP 000`
 - [ ] Uptime Kuma shows all path monitors red
-- [ ] Agent works through 8 turns and cannot resolve (verify in logs)
-- [ ] Webhook received with `status: escalated` and populated `history` array
-- [ ] Guest-facing LLM service receives escalation and (teammate's concern) notifies guest
-- [ ] Run `./scripts/restore.sh` to clean up after demo
+- [ ] Agent detects fault within 10s; `docker logs perk-agent` shows `TIER 1 PERKS` immediately
+- [ ] Agent works through turns; `docker logs perk-agent` shows `fault-update` acknowledgements each turn
+- [ ] Agent exhausts turns and calls `escalate` — logs show `Escalating to human operator`
+- [ ] `docker logs perk-agent` shows `TIER 2 PERKS` block with LLM JSON recommendation
+- [ ] `curl http://localhost:8081/status` shows empty `active_faults` (fault closed on escalation)
+- [ ] Run: `bash scripts/restore.sh` to clean up
+
+### Scenario 3 — Guest self-report (proactive contact)
+
+- [ ] `curl -X POST http://localhost:8081/guest-report -H 'Content-Type: application/json' -d '{"room":"412","message":"WiFi keeps dropping"}'` returns `{"status": "received", ...}`
+- [ ] `docker logs perk-agent` shows `GUEST REPORT — Room 412` and agent status query
+- [ ] Inject fault on path-a; agent detects independently; tier-1 perks issued; fault resolves
+- [ ] Run: `bash scripts/restore.sh`
+
+### Scenario 4 — Persistent hardware fault (human escalation required)
+
+- [ ] Start background fault re-injector (re-asserts blackhole every 4s to simulate hardware failure)
+- [ ] Agent detects fault; tier-1 perks issued; loop starts
+- [ ] Agent tries `clear_faults`, `switch_active_path`, `restart_container` — all fail (re-injector wins)
+- [ ] Agent exhausts 8 turns and calls `escalate` — `docker logs agent` shows `Escalating to human operator`
+- [ ] `docker logs perk-agent` shows tier-2 LLM recommendation
+- [ ] Stop re-injector; run `bash scripts/restore.sh`
 
 ---
 
