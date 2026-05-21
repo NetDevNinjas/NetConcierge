@@ -1,4 +1,4 @@
-tip-sdk
+openai>=1.0
 docker>=7.0
 flask>=3.0
 requests>=2.31

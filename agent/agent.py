@@ -16,22 +16,16 @@ from datetime import UTC, datetime
 import docker
 import requests
 from flask import Flask, jsonify
-
-try:
-    from tip_sdk import TipClient
-
-    _tip_client = TipClient()
-except ImportError:
-    _tip_client = None
-    logging.warning("tip_sdk not available — agent will run in stub mode")
+from openai import OpenAI
 
 # ── Configuration ──────────────────────────────────────────────────────────────
 ROUTER_API = os.environ.get("ROUTER_API", "http://172.20.0.254:5000")
 WEBHOOK_URL = os.environ.get("WEBHOOK_URL", "http://localhost:9999/fault-event")
+LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "https://litellm-api.up.railway.app/v1")
+LLM_MODEL = os.environ.get("LLM_MODEL", "claude-3-5-haiku-20241022")
 POLL_INTERVAL = int(os.environ.get("POLL_INTERVAL", "10"))
 FAULT_THRESHOLD = int(os.environ.get("FAULT_THRESHOLD", "3"))
 MAX_TURNS = 8
-MODEL = "anthropic.claude-sonnet-4-20250514-v1:0"
 
 logging.basicConfig(
     level=logging.INFO,
@@ -42,6 +36,12 @@ log = logging.getLogger(__name__)
 
 _docker = docker.from_env()
 app = Flask(__name__)
+
+# LLM client — OpenAI-compatible; points at LiteLLM proxy
+_llm = OpenAI(
+    base_url=LLM_BASE_URL,
+    api_key=os.environ.get("TIP_API_KEY", "no-key"),
+)
 
 # Set when the agent loop is actively running, prevents re-entrant loops
 _agent_busy = threading.Event()
@@ -346,10 +346,6 @@ def _get_recent_client_lines(tail: int = 20) -> tuple[int, list[str]]:
 
 # ── Agent tool-use loop ────────────────────────────────────────────────────────
 def _run_agent_loop(trigger_lines: list[str]) -> None:
-    if _tip_client is None:
-        log.error("TIP SDK unavailable — cannot run agent loop")
-        return
-
     log.info("Agent loop started")
     history: list[dict] = []
     turn = 0
@@ -370,8 +366,8 @@ def _run_agent_loop(trigger_lines: list[str]) -> None:
 
     while turn < MAX_TURNS and not escalated:
         try:
-            response = _tip_client.chat.completions.create(
-                model=MODEL,
+            response = _llm.chat.completions.create(
+                model=LLM_MODEL,
                 messages=messages,
                 tools=TOOL_DEFINITIONS,
             )
