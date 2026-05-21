@@ -310,7 +310,7 @@ Diagnose why the client is seeing HTTP failures and restore service if possible.
 
 RECOMMENDED STRATEGY:
 1. Call get_router_state(path="all") to see iptables and tc state on both paths.
-2. curl_endpoint the webserver directly on both paths to isolate where the break is.
+2. curl_endpoint("http://172.20.0.254") to test end-to-end connectivity through the router.
 3. If a path has iptables DROP rules → clear_faults on that path first.
 4. If a path has severe tc latency → clear_faults, or switch_active_path to the other.
 5. If both paths are degraded → clear_faults(path="both").
@@ -322,6 +322,9 @@ CONSTRAINTS:
 - You have at most 8 tool calls total (including escalate) — be efficient.
 - escalate MUST be your final call.
 - Do not repeat the same tool call with identical arguments.
+- IMPORTANT: The client and agent containers are on front-net (172.20.0.0/24) only.
+  They CANNOT reach 172.21.0.10 or 172.22.0.10 directly.
+  Always curl http://172.20.0.254 (the router) to test end-to-end connectivity.
 """
 
 
@@ -437,11 +440,15 @@ def _run_agent_loop(trigger_lines: list[str]) -> None:
 
             log.info("Turn %d — result: %.300s", turn, result)
             history.append({"turn": turn, "tool": name, "input": args, "result": result})
+            ## Truncate long tool results to avoid gateway context limits (403)
+            tool_content = str(result)
+            if len(tool_content) > 1500:
+                tool_content = tool_content[:1500] + "\n... (truncated)"
             messages.append(
                 {
                     "role": "tool",
                     "tool_call_id": tool_call.id,
-                    "content": str(result),
+                    "content": tool_content,
                 }
             )
 
