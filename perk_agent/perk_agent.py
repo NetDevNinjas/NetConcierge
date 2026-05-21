@@ -12,6 +12,7 @@ perks based on a tiered approach:
       (free dinner, additional comp discounts) based on the customer profile.
 """
 
+import contextlib
 import json
 import logging
 import os
@@ -125,10 +126,8 @@ def _emit_event(event_type: str, message: str, data: dict | None = None) -> None
         "message": message,
         "data": data,
     }
-    try:
+    with contextlib.suppress(Exception):
         requests.post(FRONTEND_URL, json=payload, timeout=3)
-    except Exception:
-        pass
 
 
 def _load_customer_profile() -> str:
@@ -281,6 +280,11 @@ def fault_event():
                 "turn_count": 0,
             }
         result = _build_tier_1_response(room)
+        _emit_event(
+            "tier1",
+            f"🎁 Tier 1 perks issued for Room {room}: WiFi refund + complimentary drink/appetizer",
+            data={"perks": result.get("perks")},
+        )
     elif status == "resolved":
         ## Close fault tracking and log resolution — tier-1 perks were already issued
         with _faults_lock:
@@ -291,13 +295,19 @@ def fault_event():
             "room": room,
             "message": "Issue resolved — tier-1 perks already issued, no further action.",
         }
+        _emit_event("resolved", f"✅ Fault resolved for Room {room} — no additional perks needed")
     elif tier == 2:
-        _emit_event("tier2", f"🏆 Escalation received for Room {room} — generating elevated perks via LLM...")
+        _emit_event(
+            "tier2",
+            f"🏆 Escalation received for Room {room} — generating elevated perks via LLM...",
+        )
         ## Escalated and unresolved — close tracking and issue elevated LLM perks
         with _faults_lock:
             _active_faults.pop(room, None)
         result = _build_tier_2_response(data)
-        _emit_event("tier2", f"Tier 2 perks issued for Room {room}", data=result.get("recommendation"))
+        _emit_event(
+            "tier2", f"Tier 2 perks issued for Room {room}", data=result.get("recommendation")
+        )
     else:
         result = _build_tier_1_response(room)
         _emit_event(

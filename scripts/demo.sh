@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# NetConcierge Demo Script — walks through three fault scenarios.
+# NetConcierge Demo Script — walks through four fault scenarios.
 #
 # Usage (on EC2):
 #   DOCKER='sudo docker' bash scripts/demo.sh
@@ -117,6 +117,7 @@ info "Scenarios:"
 info "  1  Path A blackholed        → LLM resolves, tier-1 perks"
 info "  2  Both paths blackholed    → LLM exhausted, escalation + tier-2 perks"
 info "  3  Guest self-reports first → proactive contact, then auto-resolved"
+info "  4  Persistent hardware fault → agent exhausts all options, human escalation"
 pause
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -260,13 +261,73 @@ echo "  ✔  perk-agent: TIER 1 PERKS issued, resolution logged"
 restore
 
 # ══════════════════════════════════════════════════════════════════════════════
-# Summary
+# SCENARIO 4 — Persistent hardware fault, human escalation required
 # ══════════════════════════════════════════════════════════════════════════════
+header "Scenario 4 / 4 — Persistent Fault: Human Escalation Required"
+cat <<'EOF'
+  Story
+  ─────
+  A physical link fault keeps reasserting itself — every time the agent clears
+  the path, the underlying hardware error immediately re-introduces the failure.
+  The agent tries every tool in its arsenal: clear_faults on both paths,
+  switch_active_path, restart_container, curl verification — nothing sticks.
+
+  What to watch for
+  ─────────────────
+  • Perk-agent issues tier-1 perks immediately at detection
+  • Agent LLM loop cycles through all available tools — all fail
+  • Agent exhausts turn limit and is forced to escalate with status=escalated
+  • Perk-agent calls LLM for tier-2 elevated compensation
+  • Escalation payload shows human operator hand-off is required
+
+EOF
+pause
+
+step "Injecting persistent fault (background re-injector simulates hardware failure)..."
+T4=$(date +%s)
+cd "$REPO_DIR"
+## Start a background process that re-asserts the blackhole every 4 seconds.
+## This simulates a physical layer fault that survives any software clear.
+(
+    while true; do
+        sleep 4
+        $DOCKER exec router iptables -I FORWARD -i eth1 -j DROP 2>/dev/null || true
+        $DOCKER exec router iptables -I FORWARD -o eth1 -j DROP 2>/dev/null || true
+        $DOCKER exec router iptables -I FORWARD -i eth2 -j DROP 2>/dev/null || true
+        $DOCKER exec router iptables -I FORWARD -o eth2 -j DROP 2>/dev/null || true
+    done
+) &
+REINJECT_PID=$!
+## Inject the initial blackhole on both paths
+DOCKER="$DOCKER" bash scripts/inject-fault.sh --path both --type blackhole
+ok "Persistent fault active (re-injector PID ${REINJECT_PID}) at $(date -u +"%Y-%m-%dT%H:%M:%SZ")."
+info "Agent will try to clear the fault but it will keep coming back — expect escalation."
+
+poll_agent "Monitoring agent — waiting for exhaustion and human escalation..." 14
+
+## Stop the re-injector before restoring, otherwise restore.sh races it
+kill "$REINJECT_PID" 2>/dev/null && wait "$REINJECT_PID" 2>/dev/null || true
+ok "Re-injector stopped."
+
+show_logs agent      "$T4" 80
+show_logs perk-agent "$T4" 60
+
+echo
+echo -e "${GREEN}  Expected outcome${RESET}"
+echo "  ✔  agent:      Tried clear_faults, switch_active_path, restart — all failed"
+echo "  ✔  agent:      'Escalating — status=escalated' after turn limit hit"
+echo "  ✔  perk-agent: TIER 1 PERKS issued (detection)"
+echo "  ✔  perk-agent: TIER 2 PERKS — LLM recommended elevated compensation"
+echo "  ✔  Human operator hand-off logged in escalation payload"
+
+restore
+
 header "Demo Complete"
 echo "  Scenarios covered:"
 echo "  1  Path failure (single)   → LLM resolved, tier-1 perks"
 echo "  2  Complete outage         → LLM escalated, tier-1 + tier-2 LLM perks"
 echo "  3  Guest self-report       → proactive contact, agent auto-resolved"
+echo "  4  Persistent hardware     → agent exhausted, human escalation + tier-2 perks"
 echo
 step "Final service state..."
 printf "  %-14s %s\n" "agent:" "$(curl -s "http://${AGENT_HOST}/status" 2>/dev/null \

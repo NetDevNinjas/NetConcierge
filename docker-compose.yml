@@ -50,7 +50,6 @@ services:
       path-b-net:
         ipv4_address: 172.22.0.254
     ports:
-      - "80:80"
       - "5000:5000"
     depends_on:
       webserver:
@@ -87,8 +86,8 @@ services:
       - WEBHOOK_URL=http://perk-agent:8081/fault-event
       - ROOM_NUMBER=412
       - FRONTEND_URL=http://frontend:3000/api/events
-      - POLL_INTERVAL=5
-      - FAULT_THRESHOLD=2
+      - POLL_INTERVAL=3
+      - FAULT_THRESHOLD=1
     ports:
       - "8080:8080"
     depends_on:
@@ -123,6 +122,7 @@ services:
     networks:
       - front-net
     ports:
+      - "80:80"
       - "3000:3000"
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/"]
