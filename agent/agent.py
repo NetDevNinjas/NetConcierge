@@ -180,8 +180,7 @@ def tool_clear_faults(path: str) -> str:
         return f"(router API error: {exc})"
 
 
-def tool_escalate(
-    status: str,
+def tool_clear_signal(
     summary: str,
     history: list,
     fault_type: str = "unknown",
@@ -189,10 +188,10 @@ def tool_escalate(
     resolved_by: str | None = None,
     turns_used: int = 0,
 ) -> str:
-    ## tier=2 triggers LLM-based elevated compensation; tier=1 is the fixed immediate perk
+    """Fire resolved webhook — no elevated perks needed."""
     payload = {
-        "status": status,
-        "tier": 2 if status == "escalated" else 1,
+        "status": "resolved",
+        "tier": 1,
         "fault_type": fault_type,
         "active_path": active_path,
         "resolved_by": resolved_by,
@@ -203,23 +202,45 @@ def tool_escalate(
         "timestamp": datetime.now(UTC).isoformat(),
     }
     log.info(
-        "Escalating — status=%s fault_type=%s active_path=%s turns=%d",
-        status,
+        "Signal cleared — fault_type=%s active_path=%s resolved_by=%s turns=%d",
+        fault_type,
+        active_path,
+        resolved_by,
+        turns_used,
+    )
+    try:
+        resp = requests.post(WEBHOOK_URL, json=payload, timeout=10)
+        return f"Webhook delivered: HTTP {resp.status_code}"
+    except Exception as exc:
+        log.warning("Webhook delivery failed: %s", exc)
+        return f"Webhook failed: {exc}"
+
+
+def tool_escalate(
+    summary: str,
+    history: list,
+    fault_type: str = "unknown",
+    active_path: str = "unknown",
+    turns_used: int = 0,
+) -> str:
+    """Fire escalation webhook — triggers tier-2 elevated perks and human hand-off."""
+    payload = {
+        "status": "escalated",
+        "tier": 2,
+        "fault_type": fault_type,
+        "active_path": active_path,
+        "turns_used": turns_used,
+        "room": ROOM_NUMBER,
+        "history": history,
+        "summary": summary,
+        "timestamp": datetime.now(UTC).isoformat(),
+    }
+    log.info(
+        "Escalating to human operator — fault_type=%s active_path=%s turns=%d",
         fault_type,
         active_path,
         turns_used,
     )
-
-    # ── Tier 2: Only trigger elevated perks when fault is unresolved ───────
-    if status == "escalated":
-        tier2_payload = {**payload, "tier": 2}
-        try:
-            requests.post(WEBHOOK_URL, json=tier2_payload, timeout=10)
-            log.info("Perk agent tier 2 notified (escalation)")
-        except Exception as exc:
-            log.warning("Perk agent tier 2 notification failed: %s", exc)
-
-    # ── Always fire the base escalation webhook for audit/logging ──────────
     try:
         resp = requests.post(WEBHOOK_URL, json=payload, timeout=10)
         return f"Webhook delivered: HTTP {resp.status_code}"
@@ -334,23 +355,17 @@ TOOL_DEFINITIONS = [
     {
         "type": "function",
         "function": {
-            "name": "escalate",
+            "name": "clear_signal",
             "description": (
-                "Report the final outcome to the guest-facing system. "
-                "ALWAYS call this as your very last action. "
-                "Use status='resolved' if you fixed the issue, 'escalated' if you could not."
+                "Report that the fault has been resolved and service is restored. "
+                "Call this as your LAST action when you have successfully fixed the issue."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "status": {
-                        "type": "string",
-                        "enum": ["resolved", "escalated"],
-                        "description": "resolved = fixed; escalated = could not fix",
-                    },
                     "summary": {
                         "type": "string",
-                        "description": "One-sentence human-readable description of what happened",
+                        "description": "One-sentence description of what was fixed and how",
                     },
                     "fault_type": {
                         "type": "string",
@@ -362,11 +377,41 @@ TOOL_DEFINITIONS = [
                     },
                     "resolved_by": {
                         "type": "string",
-                        "description": "Tool that resolved the fault, or null if not resolved",
+                        "description": "Tool that resolved the fault",
                     },
                     "turns_used": {"type": "integer"},
                 },
-                "required": ["status", "summary"],
+                "required": ["summary"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "escalate",
+            "description": (
+                "Report that the fault could NOT be resolved and human intervention is required. "
+                "Call this as your LAST action ONLY when all remediation attempts have failed. "
+                "This triggers elevated guest compensation and pages a human operator."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "summary": {
+                        "type": "string",
+                        "description": "One-sentence description of what was tried and why it failed",
+                    },
+                    "fault_type": {
+                        "type": "string",
+                        "enum": ["latency", "loss", "blackhole", "unknown"],
+                    },
+                    "active_path": {
+                        "type": "string",
+                        "description": "Active path at time of escalation (a, b, or unknown)",
+                    },
+                    "turns_used": {"type": "integer"},
+                },
+                "required": ["summary"],
             },
         },
     },
@@ -385,11 +430,12 @@ RECOMMENDED STRATEGY:
 4. If one path has high latency or is degraded, call switch_active_path to the healthy path.
 5. If both paths are degraded, call clear_faults with path set to both.
 6. As a last resort, call restart_container to reset a service.
-7. ALWAYS finish by calling escalate with status, summary, and fault_type.
+7. If you successfully restored service, call clear_signal as your final action.
+   If you could NOT restore service after exhausting all options, call escalate instead.
 
 CONSTRAINTS:
-- Maximum 8 tool calls total, including escalate.
-- escalate MUST be your last action.
+- Maximum 8 tool calls total, including clear_signal or escalate.
+- clear_signal or escalate MUST be your last action.
 - Do not repeat the same tool call with identical arguments.
 - The guest-facing gateway address is the router on the front network. Use it for curl_endpoint tests.
 """
@@ -520,10 +566,8 @@ def _run_agent_loop(trigger_lines: list[str]) -> None:
                 result = tool_clear_faults(args.get("path", "both"))
             elif name == "restart_container":
                 result = tool_restart_container(args.get("name", ""))
-            elif name == "escalate":
-                # Inject our tracked history so the webhook always has the full record
-                result = tool_escalate(
-                    status=args.get("status", "escalated"),
+            elif name == "clear_signal":
+                result = tool_clear_signal(
                     summary=args.get("summary", ""),
                     history=history,
                     fault_type=args.get("fault_type", "unknown"),
@@ -532,18 +576,27 @@ def _run_agent_loop(trigger_lines: list[str]) -> None:
                     turns_used=turn,
                 )
                 escalated = True
+            elif name == "escalate":
+                result = tool_escalate(
+                    summary=args.get("summary", ""),
+                    history=history,
+                    fault_type=args.get("fault_type", "unknown"),
+                    active_path=args.get("active_path", "unknown"),
+                    turns_used=turn,
+                )
+                escalated = True
             else:
                 result = f"Unknown tool: {name}"
 
             log.info("Turn %d — result: %.300s", turn, result)
             _emit_event(
-                "escalation" if name == "escalate" else "tool_result",
+                "escalation" if name in ("escalate", "clear_signal") else "tool_result",
                 f"Turn {turn} result: {str(result)[:300]}",
                 {"tool": name, "turn": turn},
             )
             history.append({"turn": turn, "tool": name, "input": args, "result": result})
             _agent_state.update({"current_turn": turn, "last_tool": name})
-            if name != "escalate":
+            if name not in ("escalate", "clear_signal"):
                 with contextlib.suppress(Exception):
                     requests.post(
                         f"{PERK_AGENT_URL}/fault-update",
@@ -570,9 +623,8 @@ def _run_agent_loop(trigger_lines: list[str]) -> None:
 
     # Safety net: if agent ran out of turns without calling escalate, force it
     if not escalated:
-        log.warning("Max turns reached without escalate — forcing escalation")
+        log.warning("Max turns reached without resolution — forcing escalation to human operator")
         tool_escalate(
-            status="escalated",
             summary="Agent exhausted all turns without resolving the fault.",
             history=history,
             turns_used=turn,

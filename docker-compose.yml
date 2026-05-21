@@ -86,8 +86,8 @@ services:
       - WEBHOOK_URL=http://perk-agent:8081/fault-event
       - ROOM_NUMBER=412
       - FRONTEND_URL=http://frontend:3000/api/events
-      - POLL_INTERVAL=5
-      - FAULT_THRESHOLD=2
+      - POLL_INTERVAL=3
+      - FAULT_THRESHOLD=1
     ports:
       - "8080:8080"
     depends_on:
