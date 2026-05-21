@@ -43,8 +43,12 @@ _llm = OpenAI(
     api_key=os.environ.get("TIP_API_KEY", "no-key"),
 )
 
+LOOP_COOLDOWN = int(os.environ.get("LOOP_COOLDOWN", "60"))
+
 # Set when the agent loop is actively running, prevents re-entrant loops
 _agent_busy = threading.Event()
+## Timestamp of the last loop completion; enforces LOOP_COOLDOWN between runs
+_last_loop_time: float = 0.0
 
 
 # ── Flask health endpoint ──────────────────────────────────────────────────────
@@ -480,6 +484,12 @@ def _poll_loop() -> None:
             log.info("Agent loop already active — skipping this poll cycle")
             continue
 
+        ## Skip if we're still within the cooldown window after the last loop
+        secs_since_last = time.time() - _last_loop_time
+        if secs_since_last < LOOP_COOLDOWN:
+            log.info("Cooldown active — %.0fs remaining", LOOP_COOLDOWN - secs_since_last)
+            continue
+
         consecutive, lines = _get_recent_client_lines()
         if consecutive >= FAULT_THRESHOLD:
             log.warning(
@@ -489,6 +499,8 @@ def _poll_loop() -> None:
             try:
                 _run_agent_loop(lines)
             finally:
+                global _last_loop_time
+                _last_loop_time = time.time()
                 _agent_busy.clear()
 
 
