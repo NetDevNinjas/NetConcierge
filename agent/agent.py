@@ -164,6 +164,15 @@ def tool_switch_active_path(path: str) -> str:
 
 
 def tool_clear_faults(path: str) -> str:
+    if path == "both":
+        results = {}
+        for p in ("a", "b"):
+            try:
+                resp = requests.delete(f"{ROUTER_API}/fault/{p}", timeout=5)
+                results[p] = resp.json()
+            except Exception as exc:
+                results[p] = {"error": str(exc)}
+        return json.dumps(results)
     try:
         resp = requests.delete(f"{ROUTER_API}/fault/{path}", timeout=5)
         return json.dumps(resp.json())
