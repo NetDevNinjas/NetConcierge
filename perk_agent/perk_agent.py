@@ -12,6 +12,7 @@ perks based on a tiered approach:
       (free dinner, additional comp discounts) based on the customer profile.
 """
 
+import contextlib
 import json
 import logging
 import os
@@ -125,10 +126,8 @@ def _emit_event(event_type: str, message: str, data: dict | None = None) -> None
         "message": message,
         "data": data,
     }
-    try:
+    with contextlib.suppress(Exception):
         requests.post(FRONTEND_URL, json=payload, timeout=3)
-    except Exception:
-        pass
 
 
 def _load_customer_profile() -> str:
