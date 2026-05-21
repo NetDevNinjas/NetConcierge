@@ -50,6 +50,7 @@ services:
       path-b-net:
         ipv4_address: 172.22.0.254
     ports:
+      - "80:80"
       - "5000:5000"
     depends_on:
       webserver:
