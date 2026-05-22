@@ -613,7 +613,7 @@ def _run_agent_loop(trigger_lines: list[str]) -> None:
 
             log.info("Turn %d — result: %.300s", turn, result)
             _emit_event(
-                "escalation" if name in ("escalate", "clear") else "tool_result",
+                "escalation" if name == "escalate" else "clear" if name == "clear" else "tool_result",
                 f"Turn {turn} result: {str(result)[:300]}",
                 {"tool": name, "turn": turn},
             )
