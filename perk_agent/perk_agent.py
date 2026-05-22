@@ -355,7 +355,11 @@ def fault_event():
         result = _build_tier_1_response(room)
         _emit_event(
             "tier1",
-            f"🎁 Tier 1 perks issued for Room {room}: WiFi refund + complimentary drink/appetizer",
+            f"Perk Agent → Room {room}: "{result['apology_note']}"",
+        )
+        _emit_event(
+            "tier1",
+            f"🎁 Perks for Room {room}: {' | '.join(p['value'] for p in result['perks'])}",
             data={"perks": result.get("perks")},
         )
     elif status == "resolved":
@@ -404,9 +408,15 @@ def fault_event():
         with _faults_lock:
             _active_faults.pop(room, None)
         result = _build_tier_2_response(data)
-        _emit_event(
-            "tier2", f"Tier 2 perks issued for Room {room}", data=result.get("recommendation")
-        )
+        rec = result.get("recommendation") or {}
+        apology = rec.get("apology_note", "")
+        if apology:
+            _emit_event("tier2", f"Perk Agent → Room {room}: "{apology}"")
+        tier2_perks = " | ".join(p.get("value", "") for p in rec.get("perks", []) if p.get("value"))
+        if tier2_perks:
+            _emit_event("tier2", f"🏆 Tier 2 perks for Room {room}: {tier2_perks}", data=rec)
+        else:
+            _emit_event("tier2", f"🏆 Tier 2 perks issued for Room {room}", data=rec)
     else:
         result = _build_tier_1_response(room)
         _emit_event(

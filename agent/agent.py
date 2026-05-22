@@ -217,6 +217,10 @@ def tool_clear(
         resolved_by,
         turns_used,
     )
+    _emit_event(
+        "clear_fault",
+        f"📨 Network Agent → Perk Agent: Issue resolved — {summary}",
+    )
     try:
         resp = requests.post(WEBHOOK_URL, json=payload, timeout=10)
         return f"Webhook delivered: HTTP {resp.status_code}"
@@ -249,6 +253,10 @@ def tool_escalate(
         fault_type,
         active_path,
         turns_used,
+    )
+    _emit_event(
+        "escalation",
+        f"📨 Network Agent → Perk Agent: Escalating — {summary}. Requesting tier-2 perks and human hand-off.",
     )
     try:
         resp = requests.post(WEBHOOK_URL, json=payload, timeout=10)
@@ -514,6 +522,11 @@ def _run_agent_loop(trigger_lines: list[str]) -> None:
 
     # ── Tier 1: Immediate perks (WiFi refund + bar item) ───────────────────
     _notify_perk_agent(tier=1, fault_type="detected", summary="Network fault detected")
+    _emit_event(
+        "info",
+        f"📨 Network Agent → Perk Agent: Fault detected in Room {ROOM_NUMBER} — "
+        f"issuing tier-1 perks and opening fault tracking",
+    )
 
     history: list[dict] = []
     turn = 0
@@ -574,7 +587,11 @@ def _run_agent_loop(trigger_lines: list[str]) -> None:
                 args = {}
 
             log.info("Turn %d — %s(%s)", turn, name, json.dumps(args))
-            _emit_event("tool_call", f"Turn {turn}: calling {name}({json.dumps(args)})")
+            if name in ("clear", "escalate") and args.get("summary"):
+                _call_msg = f"Turn {turn}: {name} — {args['summary']}"
+            else:
+                _call_msg = f"Turn {turn}: {name}({json.dumps(args)})"
+            _emit_event("tool_call", _call_msg)
 
             # Dispatch
             if name == "ping_host":
