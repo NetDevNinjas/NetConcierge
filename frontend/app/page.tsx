@@ -328,5 +328,7 @@ const styles: Record<string, React.CSSProperties> = {
     color: "#8b949e",
     overflow: "auto",
     maxHeight: "150px",
+    whiteSpace: "pre-wrap" as const,
+    wordBreak: "break-word" as const,
   },
 };
