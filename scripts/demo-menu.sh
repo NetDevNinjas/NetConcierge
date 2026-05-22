@@ -321,15 +321,15 @@ preflight
 while true; do
     echo
     echo -e "${CYAN}╔$(printf '═%.0s' $(seq 1 50))╗${RESET}"
-    printf  "${CYAN}║${RESET}  %-48s${CYAN}║${RESET}\n" "${BOLD}NetConcierge — Select a Scenario${RESET}"
+    printf  "${CYAN}║${RESET}  %-58s${CYAN}║${RESET}\n" "${BOLD}NetConcierge — Select a Scenario${RESET}"
     echo -e "${CYAN}╠$(printf '═%.0s' $(seq 1 50))╣${RESET}"
-    printf  "${CYAN}║${RESET}  ${BOLD}1${RESET}  %-46s${CYAN}║${RESET}\n" "Path Failure: Auto-Resolved"
-    printf  "${CYAN}║${RESET}  ${BOLD}2${RESET}  %-46s${CYAN}║${RESET}\n" "Complete Outage: Auto-Resolved"
-    printf  "${CYAN}║${RESET}  ${BOLD}3${RESET}  %-46s${CYAN}║${RESET}\n" "Guest Self-Report + Auto-Resolved"
-    printf  "${CYAN}║${RESET}  ${BOLD}4${RESET}  %-46s${CYAN}║${RESET}\n" "Persistent Fault: Human Escalation"
-    printf  "${CYAN}║${RESET}  ${BOLD}a${RESET}  %-46s${CYAN}║${RESET}\n" "Run all scenarios (sequential)"
-    printf  "${CYAN}║${RESET}  ${BOLD}r${RESET}  %-46s${CYAN}║${RESET}\n" "Reset network state"
-    printf  "${CYAN}║${RESET}  ${BOLD}q${RESET}  %-46s${CYAN}║${RESET}\n" "Quit"
+    printf  "${CYAN}║${RESET}  ${BOLD}1${RESET}  %-45s${CYAN}║${RESET}\n" "Path Failure: Auto-Resolved"
+    printf  "${CYAN}║${RESET}  ${BOLD}2${RESET}  %-45s${CYAN}║${RESET}\n" "Complete Outage: Auto-Resolved"
+    printf  "${CYAN}║${RESET}  ${BOLD}3${RESET}  %-45s${CYAN}║${RESET}\n" "Guest Self-Report + Auto-Resolved"
+    printf  "${CYAN}║${RESET}  ${BOLD}4${RESET}  %-45s${CYAN}║${RESET}\n" "Persistent Fault: Human Escalation"
+    printf  "${CYAN}║${RESET}  ${BOLD}a${RESET}  %-45s${CYAN}║${RESET}\n" "Run all scenarios (sequential)"
+    printf  "${CYAN}║${RESET}  ${BOLD}r${RESET}  %-45s${CYAN}║${RESET}\n" "Reset network state"
+    printf  "${CYAN}║${RESET}  ${BOLD}q${RESET}  %-45s${CYAN}║${RESET}\n" "Quit"
     echo -e "${CYAN}╚$(printf '═%.0s' $(seq 1 50))╝${RESET}"
     echo
     read -r -p "  → " choice || choice="q"
