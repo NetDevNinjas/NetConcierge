@@ -14,6 +14,5 @@ ssh ubuntu@netconcierge "cd /opt/netconcierge && sudo git pull origin main && su
 ## Rebuild everything
 
 ```bash
-ssh ubuntu@netconcierge "cd /opt/netconcierge && sudo git pull origin main && sudo docker compose build &
-& sudo docker compose up"
+ssh ubuntu@netconcierge "cd /opt/netconcierge && sudo git pull origin main && sudo docker compose build && sudo docker compose up"
 ```
