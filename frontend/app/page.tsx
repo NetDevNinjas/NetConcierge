@@ -27,6 +27,7 @@ const TYPE_ICONS: Record<string, string> = {
   tier2: "🏆",
   info: "ℹ️",
   clear: "📶",
+  clear_fault: "📶",
 };
 
 function EventCard({ event }: { event: AgentEvent }) {
