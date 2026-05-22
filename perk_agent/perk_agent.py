@@ -353,9 +353,10 @@ def fault_event():
                 "turn_count": 0,
             }
         result = _build_tier_1_response(room)
+        _apology = result["apology_note"]
         _emit_event(
             "tier1",
-            f"Perk Agent → Room {room}: "{result['apology_note']}"",
+            f'Perk Agent → Room {room}: "{_apology}"',
         )
         _emit_event(
             "tier1",
@@ -411,7 +412,7 @@ def fault_event():
         rec = result.get("recommendation") or {}
         apology = rec.get("apology_note", "")
         if apology:
-            _emit_event("tier2", f"Perk Agent → Room {room}: "{apology}"")
+            _emit_event("tier2", f'Perk Agent → Room {room}: "{apology}"')
         tier2_perks = " | ".join(p.get("value", "") for p in rec.get("perks", []) if p.get("value"))
         if tier2_perks:
             _emit_event("tier2", f"🏆 Tier 2 perks for Room {room}: {tier2_perks}", data=rec)
