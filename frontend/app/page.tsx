@@ -17,6 +17,12 @@ const SOURCE_COLORS: Record<string, string> = {
   system: "#8b949e",
 };
 
+const SOURCE_LABELS: Record<string, string> = {
+  "network-agent": "Network Agent",
+  "perk-agent": "Perk Agent",
+  system: "System",
+};
+
 const TYPE_ICONS: Record<string, string> = {
   fault_detected: "⚠️",
   tool_call: "🔧",
@@ -31,20 +37,38 @@ const TYPE_ICONS: Record<string, string> = {
 };
 
 function EventCard({ event }: { event: AgentEvent }) {
+  const [showData, setShowData] = useState(false);
+  const color = SOURCE_COLORS[event.source] || "#8b949e";
+  const speakerLabel = SOURCE_LABELS[event.source] || event.source;
+  const icon = TYPE_ICONS[event.type] || "•";
+  const typeLabel = event.type.replace(/_/g, " ");
+
   return (
-    <div style={styles.eventCard}>
+    <div style={{ ...styles.eventCard, borderLeft: `3px solid ${color}` }}>
       <div style={styles.eventHeader}>
-        <span style={styles.icon}>{TYPE_ICONS[event.type] || "•"}</span>
-        <span style={styles.eventType}>{event.type}</span>
+        <span style={{ ...styles.speaker, color }}>{speakerLabel}</span>
+        <span style={styles.eventTypePill}>
+          {icon} {typeLabel}
+        </span>
         <span style={styles.timestamp}>
           {new Date(event.timestamp).toLocaleTimeString()}
         </span>
       </div>
       <div style={styles.message}>{event.message}</div>
       {event.data && (
-        <pre style={styles.dataBlock}>
-          {JSON.stringify(event.data, null, 2)}
-        </pre>
+        <div style={{ marginTop: "0.35rem" }}>
+          <button
+            onClick={() => setShowData((s) => !s)}
+            style={styles.detailsToggle}
+          >
+            {showData ? "▲ hide details" : "▼ details"}
+          </button>
+          {showData && (
+            <pre style={styles.dataBlock}>
+              {JSON.stringify(event.data, null, 2)}
+            </pre>
+          )}
+        </div>
       )}
     </div>
   );
@@ -295,38 +319,48 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     alignItems: "center",
     gap: "0.4rem",
-    marginBottom: "0.3rem",
+    marginBottom: "0.4rem",
   },
-  icon: {
-    fontSize: "0.9rem",
+  speaker: {
+    fontSize: "0.8rem",
+    fontWeight: 700,
+    letterSpacing: "0.01em",
   },
-  eventType: {
-    fontSize: "0.7rem",
-    color: "#8b949e",
-    background: "#1c2128",
+  eventTypePill: {
+    fontSize: "0.65rem",
+    color: "#484f58",
     padding: "1px 5px",
     borderRadius: "3px",
-    border: "1px solid #30363d",
+    border: "1px solid #21262d",
   },
   timestamp: {
     marginLeft: "auto",
     fontSize: "0.7rem",
-    color: "#8b949e",
+    color: "#484f58",
   },
   message: {
-    fontSize: "0.85rem",
-    lineHeight: 1.5,
+    fontSize: "0.9rem",
+    lineHeight: 1.6,
     color: "#e6edf3",
     whiteSpace: "pre-wrap" as const,
   },
+  detailsToggle: {
+    background: "none",
+    border: "none",
+    color: "#484f58",
+    fontSize: "0.65rem",
+    cursor: "pointer",
+    padding: "0",
+    marginTop: "0.1rem",
+  },
   dataBlock: {
-    marginTop: "0.4rem",
+    marginTop: "0.35rem",
     padding: "0.4rem",
     background: "#0d1117",
-    border: "1px solid #30363d",
+    border: "1px solid #21262d",
     borderRadius: "4px",
-    fontSize: "0.7rem",
-    color: "#8b949e",
+    fontSize: "0.65rem",
+    color: "#484f58",
     overflow: "auto",
     maxHeight: "150px",
     whiteSpace: "pre-wrap" as const,

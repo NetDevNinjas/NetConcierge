@@ -369,6 +369,12 @@ def fault_event():
             "message": "Issue resolved — tier-1 perks already issued, no further action.",
         }
         _emit_event("resolved", f"✅ Fault resolved for Room {room} — no additional perks needed")
+        _emit_event(
+            "resolved",
+            f"Dear Guest in Room {room}, your connectivity issue has been fully resolved. "
+            f"We sincerely apologize for any inconvenience and hope the rest of your stay "
+            f"is seamless and enjoyable. Thank you for your patience. 🙏",
+        )
     elif status == "escalation-resolved":
         ## Human operator resolved the escalated fault
         with _faults_lock:
@@ -382,6 +388,12 @@ def fault_event():
         _emit_event(
             "resolved",
             f"✅ Escalated fault resolved for Room {room} — issue fully closed",
+        )
+        _emit_event(
+            "resolved",
+            f"Dear Guest in Room {room}, your connectivity issue has been resolved by our engineering team. "
+            f"We are deeply sorry for the extended inconvenience. Your tier-2 compensation is on its way — "
+            f"we hope to make the rest of your stay truly exceptional. 🙏",
         )
     elif tier == 2:
         _emit_event(
