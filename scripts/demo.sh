@@ -162,22 +162,22 @@ restore
 pause
 
 # ══════════════════════════════════════════════════════════════════════════════
-# SCENARIO 2 — Complete outage, escalated + tier-2 LLM perks
+# SCENARIO 2 — Complete outage, auto-resolved
 # ══════════════════════════════════════════════════════════════════════════════
-header "Scenario 2 / 4 — Complete Outage: Escalated"
+header "Scenario 2 / 4 — Complete Outage: Auto-Resolved"
 cat <<'EOF'
   Story
   ─────
-  Both paths A and B are blackholed simultaneously. The agent can't find a
-  healthy path and exhausts all 8 LLM turns without resolving the issue.
+  Both paths A and B are blackholed simultaneously — a total connectivity loss.
+  The agent detects the dual failure, clears both faults, and confirms via
+  router state that the active path is healthy. Service is restored in seconds.
 
   What to watch for
   ─────────────────
   • Perk-agent issues tier-1 perks immediately at detection (same as scenario 1)
-  • Agent LLM loop tries clear_faults, switch_active_path, curl tests — all fail
-  • Agent escalates with status=escalated (tier=2)
-  • Perk-agent calls LLM for elevated compensation based on Sarah's Gold status
-      → Likely: complimentary dinner for two, spa credit, or loyalty points bonus
+  • Agent LLM loop: get_router_state → clear_faults(both) → get_router_state
+  • Router state confirms both paths unblocked → agent calls clear
+  • Perk-agent logs resolution (tier-1 already issued, no extra perks needed)
 
 EOF
 pause
@@ -187,18 +187,18 @@ T2=$(date +%s)
 cd "$REPO_DIR"
 DOCKER="$DOCKER" bash scripts/inject-fault.sh --path both --type blackhole
 ok "Full blackout injected at $(date -u +"%Y-%m-%dT%H:%M:%SZ")."
-info "LLM loop runs up to 8 turns before escalating — allow ~60s."
+info "Agent needs 1 ERR line to trigger (~3s), then runs up to 8 LLM turns."
 
-poll_agent "Monitoring agent — waiting for escalation..." 12
+poll_agent "Monitoring agent — waiting for detection and resolution..." 8
 
 show_logs agent     "$T2" 80
 show_logs perk-agent "$T2" 80
 
 echo
 echo -e "${GREEN}  Expected outcome${RESET}"
-echo "  ✔  agent:      'Max turns reached without escalate — forcing escalation'"
+echo "  ✔  agent:      Fault detected → LLM loop ran → 'Agent loop complete'"
 echo "  ✔  perk-agent: TIER 1 PERKS issued (detection)"
-echo "  ✔  perk-agent: TIER 2 PERKS — LLM recommendation printed (═══ block)"
+echo "  ✔  perk-agent: resolution logged, no LLM call needed"
 
 restore
 pause
