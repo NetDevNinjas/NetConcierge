@@ -13,7 +13,7 @@ import os
 import random
 import threading
 import time
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import docker
 import requests
@@ -50,6 +50,9 @@ _llm = OpenAI(
 
 LOOP_COOLDOWN = int(os.environ.get("LOOP_COOLDOWN", "60"))
 PERK_AGENT_URL = os.environ.get("PERK_AGENT_URL", "http://perk-agent:8081")
+## Window of client log history to inspect for consecutive errors;
+## avoids stale ERR lines from a previous fault re-triggering the agent
+FAULT_WINDOW_SECS = int(os.environ.get("FAULT_WINDOW_SECS", "15"))
 
 # Set when the agent loop is actively running, prevents re-entrant loops
 _agent_busy = threading.Event()
@@ -101,8 +104,12 @@ _CURL_TARGETS = {
 
 def tool_curl_endpoint(target: str) -> str:
     url = _CURL_TARGETS.get(target, _CURL_TARGETS["gateway"])
+    ## path-a and path-b webservers are on isolated subnets not routable from the
+    ## client container; run those tests from the router which sits on all three networks.
+    ## gateway tests the end-to-end DNAT path and should run from the client.
+    container = "router" if target in ("path-a", "path-b") else "client"
     return _container_exec(
-        "client",
+        container,
         [
             "curl",
             "-s",
@@ -427,28 +434,37 @@ Investigate why guests are seeing HTTP failures and restore service if possible.
 
 RECOMMENDED STRATEGY:
 1. Call get_router_state to inspect the current path configuration and any active restrictions.
-2. Call curl_endpoint on the guest-facing gateway to test end-to-end connectivity.
-3. If a path has active restrictions, call clear_faults on that path to restore it.
-4. If one path has high latency or is degraded, call switch_active_path to the healthy path.
-5. If both paths are degraded, call clear_faults with path set to both.
-6. As a last resort, call restart_container to reset a service.
-7. If you successfully restored service, call clear as your final action.
-   If you could NOT restore service after exhausting all options, call escalate instead.
+2. If a path is blocked (blocked: yes) or has traffic shaping, call clear_faults on that path.
+   If both paths are degraded, call clear_faults with path=both.
+3. If the active path appears healthy but an alternate path is unblocked, call switch_active_path.
+4. After any remediation, call get_router_state again to verify the active path is now clean.
+5. RESOLUTION CRITERION: as soon as get_router_state shows the active path is "blocked: no"
+   and "shaping: no", the fault is resolved — call clear immediately. Do NOT wait for
+   curl_endpoint to confirm; router state is the authoritative source of truth.
+6. Use curl_endpoint only for supplementary diagnosis (e.g., to distinguish latency vs total
+   failure, or when router state alone is inconclusive). It must never block a clear decision.
+7. As a last resort, call restart_container to reset a service.
+8. Only call escalate if you have exhausted all options and cannot remove the blocking condition.
 
 CONSTRAINTS:
 - Maximum 8 tool calls total, including clear or escalate.
 - clear or escalate MUST be your last action.
 - Do not repeat the same tool call with identical arguments.
-- The guest-facing gateway address is the router on the front network. Use it for curl_endpoint tests.
+- Trust get_router_state as the authoritative truth: unblocked active path = fault resolved.
 """
 
 
 # ── Fault detection ────────────────────────────────────────────────────────────
-def _get_recent_client_lines(tail: int = 20) -> tuple[int, list[str]]:
-    """Return (consecutive_err_count, raw_lines) from the tail of the client log."""
+def _get_recent_client_lines() -> tuple[int, list[str]]:
+    """Return (consecutive_err_count, raw_lines) from a recent time window of client logs.
+
+    Reading a fixed time window (instead of a fixed tail count) ensures that stale
+    ERR lines from a previous fault cannot re-trigger the agent after cooldown.
+    """
     try:
         container = _docker.containers.get("client")
-        raw = container.logs(tail=tail).decode("utf-8", errors="replace")
+        since_ts = int((datetime.now(UTC) - timedelta(seconds=FAULT_WINDOW_SECS)).timestamp())
+        raw = container.logs(since=since_ts).decode("utf-8", errors="replace")
         lines = [ln for ln in raw.splitlines() if ln.strip()]
         consecutive = 0
         for line in reversed(lines):
