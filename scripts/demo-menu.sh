@@ -259,13 +259,14 @@ EOF
     step "Injecting persistent fault (background re-injector simulates hardware failure)..."
     T=$(date +%s)
     cd "$REPO_DIR"
-    (
-        while true; do
-            sleep 4
-            $DOCKER exec router iptables -I FORWARD -i eth1 -j DROP 2>/dev/null || true
-            $DOCKER exec router iptables -I FORWARD -o eth1 -j DROP 2>/dev/null || true
-            $DOCKER exec router iptables -I FORWARD -i eth2 -j DROP 2>/dev/null || true
-            $DOCKER exec router iptables -I FORWARD -o eth2 -j DROP 2>/dev/null || true
+    (        while true; do
+            ## Use subnet-based rules (same as inject-fault.sh) so interface
+            ## name ordering never matters after container restarts.
+            $DOCKER exec router iptables -I FORWARD -s 172.21.0.0/24 -j DROP 2>/dev/null || true
+            $DOCKER exec router iptables -I FORWARD -d 172.21.0.0/24 -j DROP 2>/dev/null || true
+            $DOCKER exec router iptables -I FORWARD -s 172.22.0.0/24 -j DROP 2>/dev/null || true
+            $DOCKER exec router iptables -I FORWARD -d 172.22.0.0/24 -j DROP 2>/dev/null || true
+            sleep 1
         done
     ) &
     REINJECT_PID=$!
