@@ -1,3 +1,9 @@
+---
+title: Network Implementation Guide
+description: Technical architecture of the simulated hotel network and docker topology
+version: 1.0
+---
+
 # NetConcierge — Network Implementation Guide
 
 ## Overview
@@ -842,10 +848,22 @@ NetConcierge/
 ├── monitoring/
 │   └── uptime-kuma/              # Persistent volume mount point
 └── docs/
-    ├── claude-initial-conversation.md
-    ├── communication.md          # Agent ↔ perk-agent webhook contract (v0.2)
-    ├── escalation.md             # Original escalation spec
-    └── NETWORK_IMPLEMENTATION.md  # This file
+    ├── README.md                 # Developer landing page & complete developer guide
+    ├── DEMO.htm                  # Non-technical Guest Experience showcase (with frontmatter)
+    ├── index.html                # Jekyll landing page mapping the documentation directory
+    ├── api/
+    │   ├── communication.md      # Detailed communication protocol / API endpoints reference (v0.2)
+    │   └── calls.md              # Examples of curl API calls
+    ├── architecture/
+    │   ├── network_implementation.md # This file (AWS & Docker network topology guide)
+    │   └── escalation_proposal.md # Proposal design for communication steps
+    ├── operations/
+    │   ├── commands.md           # Admin and deploy remote commands
+    │   └── submission_guidelines.md # Marriott CodeFest 4.0 submission details
+    └── tip-ai/
+        ├── Copy_of_TIP_SDK_Documentation.md # Travel Innovation Platform general doc
+        ├── tip_ai_codefest_4.md # SDK reference and container playground details
+        └── tip_sdk_readme.md     # SDK comprehensive readme (Rust/Python/Node)
 ```
 
 ---

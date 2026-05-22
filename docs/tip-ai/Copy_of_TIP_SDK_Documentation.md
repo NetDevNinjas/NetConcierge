@@ -1,4 +1,7 @@
-# Copy of TIP SDK Documentation
+---
+title: Copy of TIP SDK Documentation
+description: General documentation for Travel Innovation Platform (TIP) SDK
+---
 
 # TIP SDK Documentation
 

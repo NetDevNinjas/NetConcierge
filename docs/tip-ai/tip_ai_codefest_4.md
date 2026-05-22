@@ -1,3 +1,8 @@
+---
+title: TIP.ai CodeFest 4.0
+description: TIP.ai SDK references and CodeFest 4.0 guidelines
+---
+
 # TIP.ai CodeFest 4.0 
  
 Here is the repo and documentation for the tip-sdk: 

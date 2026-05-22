@@ -1,3 +1,8 @@
+---
+title: TIP SDK (Rust/Python/Node.js) README
+description: Multi-platform Travel Innovation Platform (TIP) SDK comprehensive guide
+---
+
 # TIP SDK (Rust)
 
 [![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org)
