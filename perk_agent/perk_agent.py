@@ -176,12 +176,12 @@ Respond with a JSON object:
 
 
 # ── Helper ─────────────────────────────────────────────────────────────────────
-def _emit_event(event_type: str, message: str, data: dict | None = None) -> None:
+def _emit_event(event_type: str, message: str, data: dict | None = None, source: str = "perk-agent") -> None:
     """Push an event to the frontend dashboard (best-effort)."""
     if not FRONTEND_URL:
         return
     payload = {
-        "source": "perk-agent",
+        "source": source,
         "type": event_type,
         "message": message,
         "data": data,
@@ -293,10 +293,23 @@ def guest_report():
     log.info(message)
     log.info("Forwarding to network agent for diagnostics...")
     log.info("═" * 60)
+    _emit_event(
+        "info",
+        f"📞 Guest self-report — Room {room}: \"{message}\"",
+        {"room": room, "message": message, "channel": "guest-self-report"},
+        source="network-agent",
+    )
     try:
         resp = requests.get(f"{AGENT_URL}/status", timeout=5)
         agent_info = resp.json()
         log.info("Network agent current status: %s", agent_info.get("status"))
+        _emit_event(
+            "info",
+            f"Agent status at time of guest report: {agent_info.get('status', '?')} "
+            f"(turn {agent_info.get('current_turn', 0)}, last: {agent_info.get('last_tool') or 'none'})",
+            agent_info,
+            source="network-agent",
+        )
     except Exception as exc:
         log.warning("Could not reach network agent: %s", exc)
     return jsonify(
